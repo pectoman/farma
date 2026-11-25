@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Ausencias">
 <link rel="manifest" href="manifest.webmanifest">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <title>Control de ausencias</title>
 <style>
 :root{--navy:#17324d;--blue:#2d6cdf;--bg:#f3f6fa;--card:#fff;--muted:#64748b;--line:#e3e9f0;--green:#198754;--orange:#d97706;--red:#c0392b}
@@ -44,17 +47,31 @@ form .actions{display:flex;gap:8px;margin-top:15px}form .actions>*{flex:1}
 @media(max-width:480px){main{padding:10px}.day{min-height:52px;padding:3px;font-size:10px}.guardtag{font-size:7px;padding:2px 4px}.calendar{gap:2px}.monthbar strong{font-size:15px}}
 @media(min-width:600px){.modal{align-items:center}.sheet{border-radius:18px}}
 @media print{body{background:#fff;padding:0}body>*:not(#reportScreen){display:none!important}#reportScreen{display:block!important;position:static;overflow:visible;padding:0;background:#fff}#reportScreen .report-toolbar{display:none!important}.report-paper{max-width:none;border:0;border-radius:0;box-shadow:none;padding:0}.report-paper h1{font-size:20px}.report-paper table{font-size:10px;page-break-inside:auto}.report-paper tr{page-break-inside:avoid;page-break-after:auto}.report-group{page-break-inside:avoid}}
+
+/* UI responsive polish: Tailwind CDN utilities + refined native components */
+:root{--bg:#f5f7fb;--card:#fff;--line:#e5eaf2;--blue:#315fce;--navy:#172b4d}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#eef3fb 0,#f7f9fc 230px);color:#172b4d}
+header{background:linear-gradient(115deg,#142b4b,#244b79);box-shadow:0 8px 28px #142b4b20}
+main{width:100%;max-width:900px;padding:clamp(12px,3vw,24px)}
+.card{border:1px solid #e6ebf3;border-radius:18px;box-shadow:0 5px 18px #23395b0a;padding:clamp(13px,2.5vw,19px)}
+button,.btn{transition:transform .15s ease,filter .15s ease;min-height:40px}button:active{transform:scale(.98)}
+input,select,textarea{border-color:#d6deea;border-radius:12px;min-height:42px}input:focus,select:focus,textarea:focus{outline:3px solid #315fce22;border-color:#315fce}
+nav{box-shadow:0 -6px 24px #142b4b0c;backdrop-filter:blur(14px);background:#ffffffed}nav button{flex:1;min-width:0;gap:4px;padding:7px 2px;font-size:10px}nav button iconify-icon{display:block}
+.item{padding:13px 0}.yearpick{min-height:40px;max-width:130px;border-radius:12px;font-weight:700}
+.report-toolbar button{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1}
+@media(min-width:760px){body{padding-bottom:30px}nav{position:sticky;top:auto;bottom:0;max-width:900px;margin:0 auto 18px;border:1px solid var(--line);border-radius:18px}nav button{font-size:12px}header{padding-left:max(18px,calc((100vw - 860px)/2));padding-right:max(18px,calc((100vw - 860px)/2))}}
+@media(max-width:380px){nav button{font-size:9px}.yearpick{max-width:112px}.report-paper{padding:12px}}
 </style>
 </head>
 <body>
-<header><div class="row" style="align-items:center"><div><h1>Control de ausencias</h1><p>Gestión local de vacaciones, bajas y visitas médicas</p></div><button class="secondary" style="background:#fff;color:var(--navy);white-space:nowrap;padding:9px 11px" onclick="saveCSVBackup()">Guardar CSV</button></div></header>
-<main id="app"></main>
+<header class="text-white"><div class="row flex items-center justify-between gap-3" style="align-items:center"><div class="min-w-0"><h1 class="text-xl font-bold tracking-tight">Control de ausencias</h1><p class="text-xs opacity-80">Gestión local de vacaciones, bajas y visitas médicas</p></div><button class="secondary" style="background:#fff;color:var(--navy);white-space:nowrap;padding:9px 11px" onclick="saveCSVBackup()">Guardar CSV</button></div></header>
+<main id="app" class="mx-auto w-full"></main>
 <nav id="nav">
-<button data-tab="inicio" class="active"><b>⌂</b>Inicio</button>
-<button data-tab="empleados"><b>♙</b>Empleados</button>
-<button data-tab="calendario"><b>▦</b>Calendario</button>
-<button data-tab="registros"><b>☷</b>Registros</button>
-<button data-tab="ajustes"><b>⚙</b>Ajustes</button>
+<button data-tab="inicio" class="active"><iconify-icon icon="solar:home-2-bold-duotone" width="22"></iconify-icon>Inicio</button>
+<button data-tab="empleados"><iconify-icon icon="solar:users-group-rounded-bold-duotone" width="22"></iconify-icon>Empleados</button>
+<button data-tab="calendario"><iconify-icon icon="solar:calendar-bold-duotone" width="22"></iconify-icon>Calendario</button>
+<button data-tab="registros"><iconify-icon icon="solar:clipboard-list-bold-duotone" width="22"></iconify-icon>Registros</button>
+<button data-tab="ajustes"><iconify-icon icon="solar:settings-bold-duotone" width="22"></iconify-icon>Ajustes</button>
 </nav>
 <div class="modal" id="modal"><div class="sheet" id="sheet"></div></div><div id="reportScreen" class="report-screen"></div><div class="toast" id="toast"></div>
 <script>
@@ -85,14 +102,14 @@ function render(){
  const app=$('#app'); if(tab==='inicio')app.innerHTML=home();if(tab==='empleados')app.innerHTML=employeesView();if(tab==='calendario')app.innerHTML=calendarView();if(tab==='registros')app.innerHTML=recordsView();if(tab==='ajustes')app.innerHTML=settingsView();
 }
 function home(){
- const y=Number(state.settings.year||new Date().getFullYear()),today=iso(new Date());
+ const storedYear=Number(state.settings.year||new Date().getFullYear()),y=Math.min(2100,Math.max(2026,storedYear)),today=iso(new Date());
  const yearRecords=state.records.filter(r=>r.start.slice(0,4)<=String(y)&&r.end.slice(0,4)>=String(y));
  let upcoming=yearRecords.filter(r=>r.start>=today).sort((a,b)=>a.start.localeCompare(b.start)).slice(0,5);
- return `<div class="row wrap"><h2>Resumen por empleado</h2><input class="yearpick" type="number" min="2000" max="2100" value="${y}" aria-label="Año del resumen" onchange="setYear(this.value)"></div>
+ return `<div class="row wrap"><h2>Resumen por empleado</h2><select class="yearpick" aria-label="Año del resumen" onchange="setYear(this.value)">${Array.from({length:75},(_,i)=>2026+i).map(yr=>`<option value="${yr}" ${yr===y?'selected':''}>${yr}</option>`).join('')}</select></div>
  <div class="card">${state.employees.length?state.employees.map(e=>{let rs=yearRecords.filter(r=>r.employeeId===e.id).sort((a,b)=>a.start.localeCompare(b.start));let counts={vacaciones:rs.filter(r=>r.type==='vacaciones').length,baja:rs.filter(r=>r.type==='baja').length,medica:rs.filter(r=>r.type==='medica').length,otro:rs.filter(r=>r.type==='otro').length};return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e.color||'#2d6cdf')}"></i><b>${esc(e.name)}</b></span><b>${rs.length} ausencias</b></div><div class="small muted">${counts.vacaciones} vacaciones · ${counts.baja} bajas · ${counts.medica} visitas médicas · ${counts.otro} otros permisos</div><div class="small" style="margin-top:5px">${rs.map(r=>`${pill(r.type)} ${fmt(r.start)}${r.end!==r.start?' – '+fmt(r.end):''}${r.type==='vacaciones'?' · '+(r.halfDay?'medio día':recordDays(r)+' días'):''}`).join(' &nbsp; ')||'Sin ausencias este año'}</div></div>`}).join(''):'<div class="empty">Añade empleados para ver el resumen.</div>'}</div>
  <div class="row"><h2>Próximas ausencias</h2><button class="secondary" onclick="go('registros')">Ver todas</button></div><div class="card">${upcoming.length?upcoming.map(r=>`<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(emp(r.employeeId)?.color||'#2d6cdf')}"></i><b>${esc(emp(r.employeeId)?.name||'Empleado eliminado')}</b></span>${pill(r.type)}</div><div class="small muted">${fmt(r.start)} – ${fmt(r.end)}${r.type==='vacaciones'?' · '+(r.halfDay?'medio día':recordDays(r)+' días'):''}</div></div>`).join(''):'<div class="empty">No hay ausencias futuras en este año.</div>'}</div><button style="width:100%" onclick="openRecord()">＋ Añadir ausencia</button>`;
 }
-function setYear(y){state.settings.year=Number(y);save('Año de consulta cambiado');render()}
+function setYear(y){let n=Number(y);if(!Number.isInteger(n)||n<2026||n>2100){toast('Selecciona un año entre 2026 y 2100');return}state.settings.year=n;save('Año de consulta cambiado');render()}
 function employeesView(){return `<div class="row"><h2>Empleados</h2><button onclick="openEmployee()">＋ Añadir</button></div>
  ${state.employees.length?state.employees.map(e=>{let rs=state.records.filter(r=>r.employeeId===e.id);return `<div class="card"><div class="row"><div class="empmark"><i class="empdot" style="background:${esc(e.color||'#2d6cdf')}"></i><div><b>${esc(e.name)}</b><div class="small muted">${esc(e.department||'Sin departamento')}</div></div></div><div style="text-align:right"><b>${rs.length}</b><div class="small muted">ausencias</div></div></div><div class="small muted" style="margin-top:8px">${rs.filter(r=>r.type==='vacaciones').length} vacaciones · ${rs.filter(r=>r.type==='baja').length} bajas · ${rs.filter(r=>r.type==='medica').length} visitas médicas · ${rs.filter(r=>r.type==='otro').length} otros permisos</div><div class="row" style="margin-top:10px;justify-content:flex-end"><button class="secondary" onclick="openEmployee('${e.id}')">Ver empleado y ausencias</button></div></div>`}).join(''):'<div class="card empty">Añade el primer empleado para empezar.</div>'}`;}
 function isGuardDate(dateStr){const g=state.settings.guards||{};if(g.enabled===false||!g.anchor)return false;const date=new Date(dateStr+'T12:00:00'),anchor=new Date(g.anchor+'T12:00:00');const diff=Math.round((date-anchor)/86400000),every=Math.max(1,Number(g.everyDays||21)),duration=Math.max(1,Number(g.durationDays||7));return diff>=0&&(diff%every)<duration;}
@@ -162,7 +179,27 @@ function generateReport(){
  const period=years.sort((a,b)=>a-b).join(', ');
  let groups=selectedEmployees.map(e=>{let rs=records.filter(r=>r.employeeId===e.id);return `<section class="report-group"><h3><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(e.color||'#2d6cdf')};margin-right:7px"></span>${esc(e.name)}${e.department?' · '+esc(e.department):''}</h3>${rs.length?`<table><thead><tr><th>Tipo</th><th>Fecha(s)</th><th>Duración</th><th>Observaciones</th></tr></thead><tbody>${rs.map(r=>{let shownYears=years.filter(y=>r.start<=`${y}-12-31`&&r.end>=`${y}-01-01`);let dates=shownYears.map(y=>{let a=r.start<`${y}-01-01`?`${y}-01-01`:r.start,b=r.end>`${y}-12-31`?`${y}-12-31`:r.end;return a===b?fmt(a):`${fmt(a)} – ${fmt(b)}`}).join('<br>');let duration=r.type==='vacaciones'?(r.halfDay?'Medio día (0,5)':shownYears.reduce((n,y)=>n+recordDaysInYear(r,y),0)+' días laborables'):esc(r.duration||'—');return `<tr><td>${pill(r.type)}</td><td>${dates}</td><td>${duration}</td><td>${esc(r.notes||'')}</td></tr>`}).join('')}</tbody></table>`:'<p class="small muted">Sin ausencias en los años seleccionados.</p>'}</section>`}).join('');
  const total=records.length;
- closeModal();const screen=$('#reportScreen');screen.innerHTML=`<div class="report-toolbar"><button class="secondary" onclick="closeReport()">‹ Volver a la aplicación</button><button onclick="window.print()">Imprimir / Guardar PDF</button></div><article class="report-paper"><h1>Informe de ausencias</h1><p><b>Año(s):</b> ${period}<br><b>Generado:</b> ${fmt(iso(new Date()))}<br><b>Empleados:</b> ${selectedEmployees.length} · <b>Registros:</b> ${total}</p>${groups||'<p>No hay ausencias para los filtros seleccionados.</p>'}<p class="small muted" style="margin-top:25px">Documento generado desde Control de ausencias.</p></article>`;screen.classList.add('show');
+ closeModal();const screen=$('#reportScreen');screen.innerHTML=`<div class="report-toolbar"><button class="secondary" onclick="closeReport()">‹ Volver a la aplicación</button><button onclick="downloadReportPDF()"><iconify-icon icon="solar:download-minimalistic-bold" width="18"></iconify-icon> Descargar PDF</button></div><article class="report-paper"><h1>Informe de ausencias</h1><p><b>Año(s):</b> ${period}<br><b>Generado:</b> ${fmt(iso(new Date()))}<br><b>Empleados:</b> ${selectedEmployees.length} · <b>Registros:</b> ${total}</p>${groups||'<p>No hay ausencias para los filtros seleccionados.</p>'}<p class="small muted" style="margin-top:25px">Documento generado desde Control de ausencias.</p></article>`;screen.classList.add('show');
+}
+function downloadReportPDF(){
+ try{
+  if(!window.jspdf?.jsPDF){toast('No se ha podido cargar el generador PDF. Comprueba la conexión y vuelve a intentarlo.');return}
+  const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'mm',format:'a4'}),left=15,right=195;let y=18,page=1;
+  const title=doc=>{doc.setFont('helvetica','bold');doc.setFontSize(17);doc.text('Informe de ausencias',left,y);y+=8;doc.setFont('helvetica','normal');doc.setFontSize(9);const meta=$('#reportScreen .report-paper p')?.innerText||'';doc.text(meta.replace(/\n/g,' · ').slice(0,180),left,y,{maxWidth:180});y+=10};
+  const newPage=()=>{doc.addPage();page++;y=18;title(doc)};title(doc);
+  const sections=[...$('#reportScreen .report-paper').querySelectorAll('.report-group')];
+  for(const section of sections){
+   const heading=section.querySelector('h3')?.innerText||'Empleado';
+   if(y>260)newPage();doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text(heading,left,y);y+=7;
+   const rows=[...section.querySelectorAll('tbody tr')];
+   if(!rows.length){doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('Sin ausencias en los años seleccionados.',left,y);y+=7;continue}
+   const widths=[38,48,30,64],headers=['Tipo','Fecha(s)','Duracion','Observaciones'];
+   const drawHeader=()=>{doc.setFillColor(238,243,249);doc.rect(left,y-4,180,7,'F');doc.setFont('helvetica','bold');doc.setFontSize(8);let x=left;headers.forEach((h,i)=>{doc.text(h,x+1,y);x+=widths[i]});y+=6};drawHeader();
+   for(const tr of rows){const cells=[...tr.children].map(td=>td.innerText.replace(/\s+/g,' ').trim());const wrapped=cells.map((v,i)=>doc.splitTextToSize(v,widths[i]-3));const h=Math.max(5,...wrapped.map(a=>a.length*4));if(y+h>278){newPage();drawHeader()}let x=left;doc.setFont('helvetica','normal');doc.setFontSize(8);wrapped.forEach((lines,i)=>{doc.text(lines,x+1,y);x+=widths[i]});doc.setDrawColor(220,227,235);doc.line(left,y+h-1,right,y+h-1);y+=h+2;}
+   y+=5;
+  }
+  doc.setFontSize(8);doc.setTextColor(110);doc.text('Control de ausencias',left,289);doc.save('informe-ausencias.pdf');toast('PDF descargado correctamente');
+ }catch(err){console.error(err);toast('No se pudo crear el PDF. Inténtalo de nuevo con conexión a Internet.')}
 }
 function closeReport(){$('#reportScreen').classList.remove('show')}
 $('#nav').addEventListener('click',e=>{let b=e.target.closest('button[data-tab]');if(b)go(b.dataset.tab)});
