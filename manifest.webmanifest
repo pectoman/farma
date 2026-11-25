@@ -1,0 +1,10 @@
+{
+  "name": "Control de ausencias avanzado",
+  "short_name": "Ausencias",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f6fa",
+  "theme_color": "#17324d",
+  "lang": "es"
+}
