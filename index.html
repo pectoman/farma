@@ -728,10 +728,33 @@ function daysBetween(a, b){
   return Math.round((toDate(b) - toDate(a)) / DAYS);
 }
 
+// Devuelve jornadas equivalentes: mañana = 0,5 y tarde = 0,5.
+// Admite recortar el periodo para calcular un año concreto.
+function workDayUnitsInRange(record, rangeStart, rangeEnd){
+  if (!record?.start || !record?.end || record.end < record.start) return 0;
+  const start = record.start > rangeStart ? record.start : rangeStart;
+  const end = record.end < rangeEnd ? record.end : rangeEnd;
+  if (end < start) return 0;
+  if (record.start === record.end && start === record.start && end === record.end) {
+    return record.startPart === 'morning' && record.endPart === 'afternoon' ? 1 : 0.5;
+  }
+  let total = 0;
+  const d = toDate(start);
+  const last = toDate(end);
+  while (d <= last) {
+    const date = iso(d);
+    if (date === record.start) total += record.startPart === 'afternoon' ? 0.5 : 1;
+    else if (date === record.end) total += record.endPart === 'morning' ? 0.5 : 1;
+    else total += 1;
+    d.setDate(d.getDate() + 1);
+  }
+  return total;
+}
 
 
 
-return { get DEFAULT_HOLIDAYS(){ return DEFAULT_HOLIDAYS; }, get iso(){ return iso; }, get fmt(){ return fmt; }, get monthLabel(){ return monthLabel; }, get toDate(){ return toDate; }, get isWorkingDayDate(){ return isWorkingDayDate; }, get workingDays(){ return workingDays; }, get recordDays(){ return recordDays; }, get recordDaysInYear(){ return recordDaysInYear; }, get usedVacationDays(){ return usedVacationDays; }, get vacationBalance(){ return vacationBalance; }, get recordYearSpan(){ return recordYearSpan; }, get daysBetween(){ return daysBetween; } };
+
+return { get DEFAULT_HOLIDAYS(){ return DEFAULT_HOLIDAYS; }, get iso(){ return iso; }, get fmt(){ return fmt; }, get monthLabel(){ return monthLabel; }, get toDate(){ return toDate; }, get isWorkingDayDate(){ return isWorkingDayDate; }, get workingDays(){ return workingDays; }, get recordDays(){ return recordDays; }, get recordDaysInYear(){ return recordDaysInYear; }, get usedVacationDays(){ return usedVacationDays; }, get vacationBalance(){ return vacationBalance; }, get recordYearSpan(){ return recordYearSpan; }, get daysBetween(){ return daysBetween; }, get workDayUnitsInRange(){ return workDayUnitsInRange; } };
 })();
 
 __mods["js/guards.js"] = (function(){
@@ -1096,7 +1119,7 @@ return { get state(){ return state; }, get getState(){ return getState; }, get s
 
 __mods["js/views/home.js"] = (function(){
 const { getState } = __mods["js/state.js"];
-const { fmt, iso, recordDays, usedVacationDays, vacationBalance } = __mods["js/dates.js"];
+const { fmt, iso, recordDays, recordDaysInYear, usedVacationDays, vacationBalance, workDayUnitsInRange } = __mods["js/dates.js"];
 const { typeLabel, esc, pill } = __mods["js/ui.js"];
 
 const TYPE_COLOR = {
@@ -1110,9 +1133,20 @@ function icon(name, size = 18){
   return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
 }
 
-function bar(label, value, max, color, dotColor){
+function bar(label, value, max, color, dotColor, displayValue = value){
   const pct = value > 0 && max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
-  return `<div class="bar-row"><div class="bar-head"><span class="bar-label"><i class="empdot" style="background:${dotColor || color}"></i>${esc(label)}</span><b>${value}</b></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+  return `<div class="bar-row"><div class="bar-head"><span class="bar-label"><i class="empdot" style="background:${dotColor || color}"></i>${esc(label)}</span><b>${displayValue}</b></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+}
+
+function calendarDaysInYear(record, year){
+  const a = record.start > `${year}-01-01` ? record.start : `${year}-01-01`;
+  const b = record.end < `${year}-12-31` ? record.end : `${year}-12-31`;
+  if (b < a) return 0;
+  return Math.round((new Date(b+'T12:00:00') - new Date(a+'T12:00:00')) / 86400000) + 1;
+}
+
+function absenceDaysInYear(record, year, holidays){
+  return record.type === 'vacaciones' ? recordDaysInYear(record, year, holidays) : calendarDaysInYear(record, year);
 }
 
 function monthActivity(records, year){
@@ -1137,21 +1171,26 @@ function renderHome(){
   const typeCounts = ['vacaciones', 'baja', 'medica', 'otro'].map((t) => ({ t, n: yearRecords.filter((r) => r.type === t).length }));
   const maxType = Math.max(1, ...typeCounts.map((x) => x.n));
   const byEmployee = state.employees
-    .map((e) => ({ e, n: yearRecords.filter((r) => r.employeeId === e.id).length }))
-    .sort((a, b) => b.n - a.n)
+    .map((e) => {
+      const rs = yearRecords.filter((r) => r.employeeId === e.id);
+      const days = rs.reduce((sum, r) => sum + absenceDaysInYear(r, y, holidays), 0);
+      return { e, n: rs.length, days };
+    })
+    .sort((a, b) => b.days - a.days)
     .slice(0, 6);
-  const maxEmp = Math.max(1, ...byEmployee.map((x) => x.n));
+  const maxEmp = Math.max(1, ...byEmployee.map((x) => x.days));
   const months = monthActivity(yearRecords, y);
   const maxMonth = Math.max(1, ...months);
 
   const rows = state.employees.map((e) => {
     const rs = yearRecords.filter((r) => r.employeeId === e.id);
     const counts = {
-      vacaciones: rs.filter((r) => r.type === 'vacaciones').length,
-      baja: rs.filter((r) => r.type === 'baja').length,
-      medica: rs.filter((r) => r.type === 'medica').length,
-      otro: rs.filter((r) => r.type === 'otro').length
+      vacaciones: rs.filter((r) => r.type === 'vacaciones').reduce((n, r) => n + recordDaysInYear(r, y, holidays), 0),
+      baja: rs.filter((r) => r.type === 'baja').reduce((n, r) => n + calendarDaysInYear(r, y), 0),
+      medica: rs.filter((r) => r.type === 'medica').reduce((n, r) => n + calendarDaysInYear(r, y), 0),
+      otro: rs.filter((r) => r.type === 'otro').reduce((n, r) => n + calendarDaysInYear(r, y), 0)
     };
+    const reinforcement = (state.workDays || []).filter(w => w.employeeId === e.id).reduce((n, w) => n + workDayUnitsInRange(w, `${y}-01-01`, `${y}-12-31`), 0);
     const balance = vacationBalance(e, state.records, y, holidays, state.settings.annualDays);
     return `<tr>
       <td><span class="empmark"><i class="empdot" style="background:${esc(e.color || '#2d6cdf')}"></i><span><b>${esc(e.name)}</b><span class="small muted" style="display:block">${esc(e.department || 'Sin departamento')}</span></span></span></td>
@@ -1159,6 +1198,7 @@ function renderHome(){
       <td class="num">${counts.baja}</td>
       <td class="num">${counts.medica}</td>
       <td class="num">${counts.otro}</td>
+      <td class="num">${reinforcement.toLocaleString('es-ES', { maximumFractionDigits: 1 })}</td>
       <td class="num" style="color:${balance < 0 ? 'var(--error)' : 'var(--on-surface)'}">${balance}</td>
       <td style="text-align:right"><button type="button" class="btn btn-ghost btn-sm" onclick="app.openEmployee('${e.id}')">Ficha</button></td>
     </tr>`;
@@ -1188,8 +1228,8 @@ function renderHome(){
       <div class="monthchart">${months.map((n, m) => `<div class="month-col"><div class="mval">${n || ''}</div><div class="mbar" style="height:${Math.max(3, Math.round((n / maxMonth) * 100))}%;opacity:${n ? 1 : .22}"></div><div class="mlbl">${new Date(2026, m, 1).toLocaleDateString('es-ES', { month: 'short' })}</div></div>`).join('')}</div>
     </section>
     <section class="card">
-      <div class="card-head"><h3>Empleados con más ausencias</h3><span class="small muted">Top ${byEmployee.length || 0}</span></div>
-      ${byEmployee.length ? byEmployee.map((x) => bar(x.e.name, x.n, maxEmp, 'var(--primary)', x.e.color)).join('') : '<div class="empty"><strong>Sin datos</strong>Añade empleados y ausencias para ver el ranking.</div>'}
+      <div class="card-head"><h3>Empleados con más ausencias</h3><span class="small muted">Top ${byEmployee.length || 0}</span></div><p class="small muted">Ordenado por días: vacaciones en días laborables y el resto en días naturales.</p>
+      ${byEmployee.length ? byEmployee.map((x) => bar(x.e.name, x.days, maxEmp, 'var(--primary)', x.e.color, x.days.toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' días')).join('') : '<div class="empty"><strong>Sin datos</strong>Añade empleados y ausencias para ver el ranking.</div>'}
     </section>
     <section class="card">
       <div class="card-head"><h3>Próximas ausencias</h3><button type="button" class="btn btn-ghost btn-sm" onclick="app.go('registros')">Ver todas</button></div>
@@ -1199,7 +1239,7 @@ function renderHome(){
 
   <section class="card">
     <div class="card-head"><h3>Detalle por empleado</h3><span class="small muted">${state.employees.length} empleados</span></div>
-    ${state.employees.length ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Empleado</th><th style="text-align:right">Vacaciones</th><th style="text-align:right">Bajas</th><th style="text-align:right">Visitas</th><th style="text-align:right">Otros</th><th style="text-align:right">Saldo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><strong>Aún no hay empleados</strong>Añade el primer empleado para ver saldos y resúmenes.</div>'}
+    ${state.employees.length ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Empleado</th><th style="text-align:right">Vacaciones (días)</th><th style="text-align:right">Bajas (días)</th><th style="text-align:right">Visitas (días)</th><th style="text-align:right">Otros (días)</th><th style="text-align:right">Refuerzo (días)</th><th style="text-align:right">Saldo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><strong>Aún no hay empleados</strong>Añade el primer empleado para ver saldos y resúmenes.</div>'}
   </section>`;
 }
 
@@ -1211,6 +1251,7 @@ return { get renderHome(){ return renderHome; } };
 __mods["js/views/employees.js"] = (function(){
 const { getState, save } = __mods["js/state.js"];
 const { fmt, recordDays, usedVacationDays, vacationBalance } = __mods["js/dates.js"];
+const { isGuardDate } = __mods["js/guards.js"];
 const { esc, pill, openModal, closeModal, toast, newId } = __mods["js/ui.js"];
 
 function icon(name, size = 18){
@@ -1289,6 +1330,7 @@ function openEmployee(id = ''){
     <div class="field"><label for="empColor">Color identificativo</label><input id="empColor" name="color" type="color" value="${esc(e.color || '#2d6cdf')}"></div>
     <div class="card" style="padding:var(--space-3);margin:var(--space-3) 0"><label style="display:flex;align-items:center;gap:8px;font-weight:600"><input type="checkbox" name="reinforcementOnly" ${e.reinforcementOnly ? 'checked' : ''}> Empleado que trabaja únicamente de refuerzo</label></div>
     <div class="card" style="padding:var(--space-3);margin:var(--space-3) 0"><label style="display:flex;align-items:center;gap:8px;font-weight:600"><input type="checkbox" name="alternateGuardRest" ${e.alternateGuardRest ? 'checked' : ''}> Descanso alterno en semanas de guardia</label><div class="field" style="margin-top:var(--space-2)"><label for="guardRestStart">Miércoles de inicio de la serie</label><input id="guardRestStart" name="guardRestStart" type="date" value="${esc(e.guardRestStart || '')}"><p class="help">Ese miércoles será el primer «no trabaja». En la siguiente guardia será el viernes, alternando sucesivamente. Selecciona un miércoles.</p></div></div>
+    <div class="card" style="padding:var(--space-3);margin:var(--space-3) 0"><label style="display:flex;align-items:center;gap:8px;font-weight:600"><input type="checkbox" name="morningGuardEnabled" ${e.morningGuardEnabled ? 'checked' : ''}> Trabaja un día de mañana cada tres guardias</label><div class="field" style="margin-top:var(--space-2)"><label for="morningGuardStart">Lunes de inicio de la serie</label><input id="morningGuardStart" name="morningGuardStart" type="date" value="${esc(e.morningGuardStart || '')}"><p class="help">Selecciona el lunes de la primera semana de guardia en la que debe aparecer «${esc(e.name || 'Empleado')} de mañana». La etiqueta se repetirá cada tres guardias.</p></div></div>
     <div class="form-actions"><button type="submit" class="btn btn-primary">Guardar empleado</button>${id ? `<button type="button" class="btn btn-danger" onclick="app.deleteEmployee('${id}')">Eliminar</button>` : ''}</div>
   </form>`);
 }
@@ -1307,10 +1349,13 @@ function saveEmployee(ev, id){
     entitlement: Number(f.get('entitlement')),
     carry: Number(f.get('carry')),
     alternateGuardRest: f.get('alternateGuardRest') === 'on',
+    morningGuardEnabled: f.get('morningGuardEnabled') === 'on',
+    morningGuardStart: String(f.get('morningGuardStart') || ''),
     guardRestStart: String(f.get('guardRestStart') || ''),
     reinforcementOnly: f.get('reinforcementOnly') === 'on'
   };
   if (value.alternateGuardRest && (!value.guardRestStart || new Date(value.guardRestStart + 'T12:00:00').getDay() !== 3)) { toast('Selecciona un miércoles como inicio de la serie'); return; }
+  if (value.morningGuardEnabled) { const monday = value.morningGuardStart && new Date(value.morningGuardStart + 'T12:00:00').getDay() === 1; const g = state.settings.guards || {}; if (!monday || !isGuardDate(value.morningGuardStart, g)) { toast('Selecciona un lunes que pertenezca a una semana de guardia como inicio de la serie'); return; } }
   if (id) state.employees = state.employees.map((x) => (x.id === id ? value : x));
   else state.employees.push(value);
   save(id ? 'Empleado modificado' : 'Nuevo empleado');
@@ -1579,6 +1624,20 @@ function isSpecialGuardRestDate(employee,date,guards){
   return iso(target)===date;
 }
 
+function isSpecialGuardMorningWeek(employee,date,guards){
+  if(!employee?.morningGuardEnabled || !employee.morningGuardStart || !isGuardDate(date,guards)) return false;
+  const g = guards || {};
+  const every = Number(g.everyDays || 21);
+  const anchor = new Date((g.anchor || '2026-11-16')+'T12:00:00');
+  const current = new Date(date+'T12:00:00');
+  const start = new Date(employee.morningGuardStart+'T12:00:00');
+  const diffFromAnchor = Math.round((start-anchor)/86400000);
+  if(diffFromAnchor < 0 || !isGuardDate(employee.morningGuardStart, guards)) return false;
+  const cycleIndex = Math.floor(Math.round((current-anchor)/86400000)/every);
+  const firstCycle = Math.floor(diffFromAnchor/every);
+  return cycleIndex >= firstCycle && (cycleIndex-firstCycle)%3===0;
+}
+
 function daySummary(date, state){
   const rs = state.records.filter((r) => r.start <= date && r.end >= date);
   const ws = (state.workDays || []).filter((w) => w.start <= date && w.end >= date);
@@ -1587,13 +1646,15 @@ function daySummary(date, state){
     const e = state.employees.find((x) => x.id === r.employeeId);
     return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i><b>${esc(e?.name || 'Empleado eliminado')}</b></span>${pill(r.type)}</div><div class="row" style="margin-top:4px"><span class="small muted">${fmt(r.start)} – ${fmt(r.end)}${r.type === 'vacaciones' ? ' · ' + (r.halfDay ? 'medio día' : recordDays(r, state.settings.holidays) + ' días laborables') : ''}</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openRecord('${r.id}')">Editar</button></div>${r.notes ? `<div class="small muted" style="margin-top:2px">${esc(r.notes)}</div>` : ''}</div>`;
   }).join('');
-  const workItems = ws.map(w => { const e=state.employees.find(x=>x.id===w.employeeId); const range=w.start===w.end?((w.startPart==='morning'?'Mañana':'Tarde')+' – '+(w.endPart==='morning'?'Mañana':'Tarde')):(date===w.start?'Desde '+(w.startPart==='afternoon'?'tarde':'mañana'):date===w.end?'Hasta '+(w.endPart==='morning'?'mañana':'tarde'):'Jornada completa'); return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e?.color||'#2d6cdf')}"></i><b>${esc(e?.name||'Empleado eliminado')}</b></span><span class="small">Refuerzo · ${range}</span></div><div class="row" style="margin-top:4px"><span class="small muted">Día de trabajo programado</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openWorkDay('${w.id}')">Editar</button></div></div>`; }).join('');
+  const workItems = ws.map(w => { const e=state.employees.find(x=>x.id===w.employeeId); const range=w.start===w.end?((w.startPart==='morning'?'Mañana':'Tarde')+' – '+(w.endPart==='morning'?'Mañana':'Tarde')):(date===w.start?'Desde '+(w.startPart==='afternoon'?'tarde':'mañana'):date===w.end?'Hasta '+(w.endPart==='morning'?'mañana':'tarde'):'Jornada completa'); return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e?.color||'#2d6cdf')}"></i><b>${esc(e?.name||'Empleado eliminado')}</b></span><span class="small"><i class="workday-square" style="background:${esc(e?.color||'#2d6cdf')};vertical-align:middle;margin-right:5px"></i>Refuerzo · ${range}</span></div><div class="row" style="margin-top:4px"><span class="small muted">Día de trabajo programado</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openWorkDay('${w.id}')">Editar</button></div></div>`; }).join('');
   const guardRest = state.employees.filter(e => isSpecialGuardRestDate(e,date,state.settings.guards));
+  const morningTags = state.employees.filter(e => isSpecialGuardMorningWeek(e,date,state.settings.guards));
   return `<div class="card daydetail">
     <div class="card-head"><div><h3>Resumen del ${fmt(date)}</h3><p class="small muted">${rs.length ? rs.length + ' ausencia(s)' : 'Sin ausencias'} · ${ws.length} refuerzo(s)</p></div><button type="button" class="btn btn-secondary btn-sm" onclick="app.openRecordForDate('${date}')">${icon('solar:add-circle-linear', 16)} Añadir</button></div>
     ${guard ? `<div class="guardinfo" style="margin-bottom:var(--space-2)">${icon('solar:shield-warning-linear', 15)} Guardia informativa</div>` : ''}
+    ${morningTags.map(e=>`<div class="guard-rest-info" style="background:${esc(e.color)}18;border-left:4px solid ${esc(e.color)};padding:8px 10px;margin:6px 0;border-radius:6px;color:${esc(e.color)}"><b>${esc(e.name)} de mañana</b></div>`).join('')}
     ${guardRest.map(e=>`<div class="guard-rest-info" style="background:${esc(e.color)}18;border-left:4px solid ${esc(e.color)};padding:8px 10px;margin:6px 0;border-radius:6px;color:${esc(e.color)}"><b>${esc(e.name)} no trabaja</b></div>`).join('')}
-    ${items}${workItems}${(!items && !workItems && !guardRest.length) ? '<div class="empty" style="padding:var(--space-4) 0"><strong>Día libre de ausencias</strong>No hay ausencias ni refuerzos registrados para este día.</div>' : ''}
+    ${items}${workItems}${(!items && !workItems && !guardRest.length && !morningTags.length) ? '<div class="empty" style="padding:var(--space-4) 0"><strong>Día libre de ausencias</strong>No hay ausencias ni refuerzos registrados para este día.</div>' : ''}
   </div>`;
 }
 
@@ -1614,14 +1675,16 @@ function renderCalendar(calDate, selectedDate){
     const ws = (state.workDays || []).filter((w) => w.start <= date && w.end >= date);
     const guard = isGuardDate(date, state.settings.guards);
     const guardRest = state.employees.filter(e => isSpecialGuardRestDate(e,date,state.settings.guards));
+  const morningTags = state.employees.filter(e => isSpecialGuardMorningWeek(e,date,state.settings.guards));
     const today = date === iso(new Date());
     const dots = rs.slice(0, 4).map((r) => {
       const e = state.employees.find((x) => x.id === r.employeeId);
       return `<i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i>`;
     }).join('');
     const squares = ws.slice(0,3).map(w=>{const e=state.employees.find(x=>x.id===w.employeeId);return `<i class="workday-square" title="Refuerzo: ${esc(e?.name||'')}" style="background:${esc(e?.color||'#2d6cdf')}"></i>`;}).join('');
+    const morningWeekTags = morningTags.map(e=>`<span class="guard-rest-tag" style="background:${esc(e.color)};color:#fff">${esc(e.name)} de mañana</span>`).join('');
     const restTags = guardRest.map(e=>`<span class="guard-rest-tag" style="background:${esc(e.color)};color:#fff">${esc(e.name)} no trabaja</span>`).join('');
-    cells += `<div class="day ${guard ? 'guardday' : ''} ${today ? 'today' : ''} ${selectedDate === date ? 'selected' : ''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d}</span>${rs.length ? `<span class="day-count">${rs.length}</span><span class="day-dots">${dots}</span>` : ''}${squares ? `<span class="workday-squares">${squares}</span>` : ''}${guard ? '<span class="guardtag">GUARDIA</span>' : ''}${restTags}</div>`;
+    cells += `<div class="day ${guard ? 'guardday' : ''} ${today ? 'today' : ''} ${selectedDate === date ? 'selected' : ''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d}</span>${rs.length ? `<span class="day-count">${rs.length}</span><span class="day-dots">${dots}</span>` : ''}${squares ? `<span class="workday-squares">${squares}</span>` : ''}${guard ? '<span class="guardtag">GUARDIA</span>' : ''}${morningWeekTags}${restTags}</div>`;
   }
 
   const runs = guardRuns(guardDatesInMonth(y, m, state.settings.guards));
@@ -1911,7 +1974,7 @@ return { get renderSettings(){ return renderSettings; }, get saveGuardSettings()
 
 __mods["js/report.js"] = (function(){
 const { getState } = __mods["js/state.js"];
-const { fmt, iso, recordDaysInYear, recordYearSpan } = __mods["js/dates.js"];
+const { fmt, iso, recordDaysInYear, recordYearSpan, workDayUnitsInRange } = __mods["js/dates.js"];
 const { esc, pill, toast, openModal, closeModal, $ } = __mods["js/ui.js"];
 
 function icon(name, size = 18){
@@ -1972,11 +2035,12 @@ function generateReport(){
       const shownYears=years.filter(y=>w.start<=`${y}-12-31` && w.end>=`${y}-01-01`);
       const dates=shownYears.map(y=>{const a=w.start<`${y}-01-01`?`${y}-01-01`:w.start;const b=w.end>`${y}-12-31`?`${y}-12-31`:w.end;return a===b?fmt(a):`${fmt(a)} – ${fmt(b)}`;}).join('<br>');
       const range=`${w.startPart==='afternoon'?'Tarde':'Mañana'} – ${w.endPart==='morning'?'Mañana':'Tarde'}`;
-      return `<tr><td>Refuerzo</td><td>${dates}</td><td>${range}</td><td></td></tr>`;
+      const units=shownYears.reduce((n,y)=>n+workDayUnitsInRange(w,`${y}-01-01`,`${y}-12-31`),0);
+      return `<tr><td>Refuerzo</td><td>${dates}</td><td>${units.toLocaleString('es-ES',{maximumFractionDigits:1})} días</td><td>${range}</td></tr>`;
     });
     const allRows=[...rows,...workRows];
     const body = allRows.length
-      ? `<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Fecha(s)</th><th>Duración</th><th>Observaciones</th></tr></thead><tbody>${allRows.join('')}</tbody></table></div>`
+      ? `<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Fecha(s)</th><th>Días trabajados / duración</th><th>Observaciones</th></tr></thead><tbody>${allRows.join('')}</tbody></table></div>`
       : '<p class="small muted">Sin ausencias ni refuerzos en los años seleccionados.</p>';
     return `<section class="report-group"><h3><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(e.color || '#2d6cdf')};margin-right:7px"></span>${esc(e.name)}${e.department ? ' · ' + esc(e.department) : ''}</h3>${body}</section>`;
   }).join('');
