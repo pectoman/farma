@@ -602,6 +602,7 @@ body.modal-open{overflow:hidden}
   .report-group{page-break-inside:avoid}
 }
 
+.workday-squares{display:flex;gap:3px;justify-content:center;margin-top:3px}.workday-square{display:inline-block;width:8px;height:8px;border-radius:1px;flex:0 0 8px}.guard-rest-tag{display:block;font-size:8px;line-height:1.15;padding:2px 3px;border-radius:3px;margin-top:2px;white-space:normal;overflow-wrap:anywhere}.guard-rest-info{font-size:12px}.day{min-height:72px}
 </style>
 <title>Control de ausencias</title>
 </head>
@@ -811,6 +812,7 @@ function createDefaultState(){
   return {
     employees: [],
     records: [],
+    workDays: [],
     settings: {
       annualDays: 22,
       workweek: 'monfri',
@@ -871,7 +873,11 @@ function normalizeState(raw){
       end: r.end || r.start,
       type: r.type || 'vacaciones'
     }));
-  return { employees, records, settings };
+  const workDays = Array.isArray(raw.workDays)
+    ? raw.workDays.filter((w) => w && w.id && ids.has(w.employeeId) && /^\d{4}-\d{2}-\d{2}$/.test(w.start || '') && /^\d{4}-\d{2}-\d{2}$/.test(w.end || w.start || '') && (w.end || w.start) >= w.start)
+        .map((w) => ({ ...w, end: w.end || w.start, startPart: w.startPart === 'afternoon' ? 'afternoon' : 'morning', endPart: w.endPart === 'morning' ? 'morning' : 'afternoon' }))
+    : [];
+  return { employees, records, workDays, settings };
 }
 
 function dataSnapshot(state){
@@ -1128,9 +1134,6 @@ function renderHome(){
   const yearRecords = state.records.filter((r) => r.start.slice(0, 4) <= String(y) && r.end.slice(0, 4) >= String(y));
   const upcoming = yearRecords.filter((r) => r.start >= today).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 5);
 
-  const vacationDays = state.employees.reduce((total, e) => total + usedVacationDays(state.records, e.id, y, holidays), 0);
-  const totalEntitlement = state.employees.reduce((total, e) => total + Number(e.entitlement ?? state.settings.annualDays) + Number(e.carry || 0), 0);
-  const vacationPct = totalEntitlement > 0 ? Math.min(100, Math.round((vacationDays / totalEntitlement) * 100)) : 0;
   const typeCounts = ['vacaciones', 'baja', 'medica', 'otro'].map((t) => ({ t, n: yearRecords.filter((r) => r.type === t).length }));
   const maxType = Math.max(1, ...typeCounts.map((x) => x.n));
   const byEmployee = state.employees
@@ -1172,7 +1175,6 @@ function renderHome(){
   <div class="stats-grid">
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Empleados</span><span class="kpi-icon">${icon('solar:users-group-rounded-linear')}</span></div><span class="kpi-value">${state.employees.length}</span><span class="kpi-hint">Plantilla registrada</span></div>
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Ausencias ${y}</span><span class="kpi-icon">${icon('solar:clipboard-list-linear')}</span></div><span class="kpi-value">${yearRecords.length}</span><span class="kpi-hint">Registros del año</span></div>
-    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Vacaciones usadas</span><span class="kpi-icon">${icon('solar:umbrella-linear')}</span></div><span class="kpi-value">${vacationDays}</span><div class="kpi-progress"><span style="width:${vacationPct}%"></span></div><span class="kpi-hint">${vacationPct}% de ${totalEntitlement} días</span></div>
     <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Próximas</span><span class="kpi-icon">${icon('solar:bell-linear')}</span></div><span class="kpi-value">${upcoming.length}</span><span class="kpi-hint">Programadas</span></div>
   </div>
 
@@ -1228,7 +1230,7 @@ function renderEmployees(){
     return `<article class="card employee-card" data-search="${esc(search)}">
       <div class="employee-top">
         <span class="empmark"><i class="empdot" style="background:${esc(e.color || '#2d6cdf')}"></i><span><b>${esc(e.name)}</b><span class="small muted" style="display:block">${esc(e.department || 'Sin departamento')}</span></span></span>
-        <span class="count-badge">${rs.length}</span>
+        <span class="count-badge">${e.reinforcementOnly ? 'Refuerzo' : rs.length}</span>
       </div>
       <div class="balance-line"><span>Saldo ${y}</span><b>${balance} días</b></div>
       <div class="mini-breakdown">
@@ -1244,7 +1246,8 @@ function renderEmployees(){
 
   return `<div class="page-head">
     <div><h2 class="page-title">Empleados</h2><p class="page-sub">Directorio y saldos de vacaciones</p></div>
-    <button type="button" class="btn btn-primary" onclick="app.openEmployee()">${icon('solar:add-circle-linear', 18)} Añadir empleado</button>
+    <div class="page-actions"><label class="year-control">${icon('solar:calendar-linear', 18)}<select class="yearpick" aria-label="Año de empleados" onchange="app.setYear(this.value)">${Array.from({ length: 75 }, (_, i) => 2026 + i).map((yr) => `<option value="${yr}" ${yr === y ? 'selected' : ''}>${yr}</option>`).join('')}</select></label>
+    <button type="button" class="btn btn-primary" onclick="app.openEmployee()">${icon('solar:add-circle-linear', 18)} Añadir empleado</button></div>
   </div>
   ${state.employees.length ? `<div class="toolbar"><div class="search-field">${icon('solar:magnifer-linear', 18)}<input type="search" placeholder="Buscar por nombre o departamento" aria-label="Buscar empleados" oninput="app.filterEmployees(this.value)"></div></div>` : ''}
   <div id="employeesList">${state.employees.length ? `<div class="employee-grid">${cards}</div>` : '<div class="card empty"><strong>Aún no hay empleados</strong>Añade el primer empleado para empezar.</div>'}</div>
@@ -1256,6 +1259,7 @@ function openEmployee(id = ''){
   const employee = state.employees.find((e) => e.id === id);
   const e = employee || { name: '', department: '', entitlement: state.settings.annualDays, carry: 0, color: '#2d6cdf' };
   const rs = id ? state.records.filter((r) => r.employeeId === id).sort((a, b) => b.start.localeCompare(a.start)) : [];
+  const ws = id ? (state.workDays || []).filter((w) => w.employeeId === id).sort((a, b) => b.start.localeCompare(a.start)) : [];
   const y = state.settings.year;
   const holidays = state.settings.holidays;
   const balance = vacationBalance(e, state.records, y, holidays, state.settings.annualDays);
@@ -1268,6 +1272,9 @@ function openEmployee(id = ''){
     <h3 style="margin:var(--space-4) 0 var(--space-2)">Todas las ausencias</h3>
     ${rs.length ? rs.map((r) => `<div class="item"><div class="row">${pill(r.type)}<span class="small muted">${fmt(r.start)}${r.end !== r.start ? ' – ' + fmt(r.end) : ''}</span></div><div class="row" style="margin-top:4px"><span class="small">${r.type === 'vacaciones' ? (r.halfDay ? 'Medio día' : recordDays(r, holidays) + ' días laborables') : esc(r.duration || r.notes || '')}</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openRecord('${r.id}')">Editar</button></div></div>`).join('') : '<div class="empty" style="padding:var(--space-4) 0"><strong>Sin ausencias</strong>Este empleado todavía no tiene ausencias.</div>'}
     <button type="button" class="btn btn-secondary btn-block" style="margin-top:var(--space-3)" onclick="app.openRecordForEmployee('${id}')">${icon('solar:add-circle-linear', 16)} Añadir ausencia</button>
+    <h3 style="margin:var(--space-4) 0 var(--space-2)">Días de trabajo de refuerzo</h3>
+    ${ws.length ? ws.map((w) => `<div class="item"><div class="row"><b class="small">${fmt(w.start)}${w.end !== w.start ? ' – ' + fmt(w.end) : ''}</b><span class="small muted">${w.startPart === 'afternoon' ? 'Tarde' : 'Mañana'} – ${w.endPart === 'morning' ? 'Mañana' : 'Tarde'}</span></div><div class="row" style="margin-top:4px"><span class="small muted">Refuerzo</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openWorkDay('${w.id}')">Editar</button></div></div>`).join('') : '<p class="small muted">Sin días de refuerzo registrados.</p>'}
+    <button type="button" class="btn btn-secondary btn-block" style="margin-top:var(--space-2)" onclick="app.openWorkDay('', '${id}')">${icon('solar:add-circle-linear', 16)} Añadir días de refuerzo</button>
   </div>` : '';
 
   openModal(`<div class="modal-head"><div><h2>${id ? 'Ficha del empleado' : 'Nuevo empleado'}</h2><p class="small muted">${id ? 'Datos, saldo y ausencias' : 'Añade un empleado al equipo'}</p></div><button type="button" class="icon-btn" aria-label="Cerrar" onclick="app.closeModal()">${icon('solar:close-circle-linear', 20)}</button></div>
@@ -1280,6 +1287,8 @@ function openEmployee(id = ''){
       <div class="field"><label for="empCarry">Días pendientes de años anteriores</label><input id="empCarry" name="carry" type="number" step=".5" value="${e.carry || 0}"></div>
     </div>
     <div class="field"><label for="empColor">Color identificativo</label><input id="empColor" name="color" type="color" value="${esc(e.color || '#2d6cdf')}"></div>
+    <div class="card" style="padding:var(--space-3);margin:var(--space-3) 0"><label style="display:flex;align-items:center;gap:8px;font-weight:600"><input type="checkbox" name="reinforcementOnly" ${e.reinforcementOnly ? 'checked' : ''}> Empleado que trabaja únicamente de refuerzo</label></div>
+    <div class="card" style="padding:var(--space-3);margin:var(--space-3) 0"><label style="display:flex;align-items:center;gap:8px;font-weight:600"><input type="checkbox" name="alternateGuardRest" ${e.alternateGuardRest ? 'checked' : ''}> Descanso alterno en semanas de guardia</label><div class="field" style="margin-top:var(--space-2)"><label for="guardRestStart">Miércoles de inicio de la serie</label><input id="guardRestStart" name="guardRestStart" type="date" value="${esc(e.guardRestStart || '')}"><p class="help">Ese miércoles será el primer «no trabaja». En la siguiente guardia será el viernes, alternando sucesivamente. Selecciona un miércoles.</p></div></div>
     <div class="form-actions"><button type="submit" class="btn btn-primary">Guardar empleado</button>${id ? `<button type="button" class="btn btn-danger" onclick="app.deleteEmployee('${id}')">Eliminar</button>` : ''}</div>
   </form>`);
 }
@@ -1296,8 +1305,12 @@ function saveEmployee(ev, id){
     department: String(f.get('department') || '').trim(),
     color: f.get('color') || old?.color || '#2d6cdf',
     entitlement: Number(f.get('entitlement')),
-    carry: Number(f.get('carry'))
+    carry: Number(f.get('carry')),
+    alternateGuardRest: f.get('alternateGuardRest') === 'on',
+    guardRestStart: String(f.get('guardRestStart') || ''),
+    reinforcementOnly: f.get('reinforcementOnly') === 'on'
   };
+  if (value.alternateGuardRest && (!value.guardRestStart || new Date(value.guardRestStart + 'T12:00:00').getDay() !== 3)) { toast('Selecciona un miércoles como inicio de la serie'); return; }
   if (id) state.employees = state.employees.map((x) => (x.id === id ? value : x));
   else state.employees.push(value);
   save(id ? 'Empleado modificado' : 'Nuevo empleado');
@@ -1311,6 +1324,7 @@ function deleteEmployee(id){
   if (!confirm('¿Eliminar empleado? Sus registros también se eliminarán.')) return;
   state.employees = state.employees.filter((e) => e.id !== id);
   state.records = state.records.filter((r) => r.employeeId !== id);
+  state.workDays = (state.workDays || []).filter((w) => w.employeeId !== id);
   save('Empleado eliminado');
   closeModal();
   window.app.render();
@@ -1324,7 +1338,7 @@ return { get renderEmployees(){ return renderEmployees; }, get openEmployee(){ r
 
 __mods["js/views/records.js"] = (function(){
 const { getState, save } = __mods["js/state.js"];
-const { fmt, iso, recordDays, workingDays, recordYearSpan } = __mods["js/dates.js"];
+const { fmt, iso, recordDays, workingDays, recordYearSpan, recordDaysInYear } = __mods["js/dates.js"];
 const { esc, pill, typeLabel, openModal, closeModal, toast, newId, $ } = __mods["js/ui.js"];
 
 function icon(name, size = 18){
@@ -1382,8 +1396,8 @@ function openRecord(id = ''){
     <div class="field"><label for="recEmployee">Empleado *</label><select id="recEmployee" name="employeeId">${state.employees.map((e) => `<option value="${e.id}" ${e.id === r.employeeId ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}</select></div>
     <div class="field"><label for="rtype">Tipo de ausencia</label><select name="type" id="rtype" onchange="app.toggleRecordFields()">${[['vacaciones', 'Vacaciones'], ['baja', 'Baja médica'], ['medica', 'Visita médica'], ['otro', 'Otro permiso']].map(([v, l]) => `<option value="${v}" ${r.type === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
     <div class="form-grid two">
-      <div class="field"><label for="recStart">Fecha inicial *</label><input id="recStart" name="start" type="date" required value="${r.start}" onchange="app.previewVacationPart()"></div>
-      <div class="field"><label for="recEnd">Fecha final *</label><input id="recEnd" name="end" type="date" required value="${r.end}" onchange="app.previewVacationPart()"></div>
+      <div class="field"><label for="recStart">Fecha inicial *</label><input id="recStart" name="start" type="date" required value="${r.start}" onchange="app.syncRecordEndMin()"></div>
+      <div class="field"><label for="recEnd">Fecha final *</label><input id="recEnd" name="end" type="date" min="${r.start}" required value="${r.end}" onchange="app.previewVacationPart()"></div>
     </div>
     <div class="field" id="vacationDurationWrap"><label for="vacationPart">Duración de vacaciones</label><select name="vacationPart" id="vacationPart" onchange="app.previewVacationPart()"><option value="full" ${!r.halfDay ? 'selected' : ''}>Día(s) completo(s)</option><option value="half" ${r.halfDay ? 'selected' : ''}>Medio día (0,5)</option></select><p class="help">El medio día se aplica a una única fecha laborable, de lunes a viernes y no festiva.</p></div>
     <div class="field" id="durationWrap"><label for="recDuration">Duración de visita médica</label><input id="recDuration" name="duration" placeholder="Ej. 2 horas o jornada completa" value="${esc(r.duration || '')}"></div>
@@ -1392,6 +1406,15 @@ function openRecord(id = ''){
     <div class="form-actions"><button type="submit" class="btn btn-primary">Guardar</button>${id ? `<button type="button" class="btn btn-danger" onclick="app.deleteRecord('${id}')">Eliminar</button>` : ''}</div>
   </form>`);
   toggleRecordFields();
+}
+
+function syncRecordEndMin(){
+  const start = $('#recStart');
+  const end = $('#recEnd');
+  if (!start || !end) return;
+  end.min = start.value;
+  if (end.value && end.value < start.value) end.value = start.value;
+  previewVacationPart();
 }
 
 function toggleRecordFields(){
@@ -1443,6 +1466,21 @@ function saveRecord(ev, id){
       value.daysOverride = workingDays(start, end, state.settings.holidays);
       if (value.daysOverride === 0) { toast('El periodo no contiene días laborables'); return; }
     }
+    const employee = state.employees.find((e) => e.id === value.employeeId);
+    const entitlement = Number(employee?.entitlement ?? state.settings.annualDays) + Number(employee?.carry || 0);
+    const firstYear = Number(start.slice(0, 4));
+    const lastYear = Number(end.slice(0, 4));
+    for (let year = firstYear; year <= lastYear; year++) {
+      const alreadyUsed = state.records
+        .filter((r) => r.id !== id && r.employeeId === value.employeeId && r.type === 'vacaciones')
+        .reduce((sum, r) => sum + recordDaysInYear(r, year, state.settings.holidays), 0);
+      const requested = recordDaysInYear(value, year, state.settings.holidays);
+      if (alreadyUsed + requested > entitlement + 0.0001) {
+        const remaining = Math.max(0, entitlement - alreadyUsed);
+        toast(`No se puede guardar: en ${year} solo quedan ${remaining} días de vacaciones y el periodo añade ${requested}.`);
+        return;
+      }
+    }
   } else {
     delete value.halfDay;
     delete value.daysOverride;
@@ -1487,7 +1525,37 @@ function openRecordForDate(date){
 
 
 
-return { get renderRecords(){ return renderRecords; }, get openRecord(){ return openRecord; }, get toggleRecordFields(){ return toggleRecordFields; }, get previewVacationPart(){ return previewVacationPart; }, get saveRecord(){ return saveRecord; }, get deleteRecord(){ return deleteRecord; }, get openRecordForEmployee(){ return openRecordForEmployee; }, get openRecordForDate(){ return openRecordForDate; } };
+function renderWorkDays(){
+  const state = getState();
+  const entries = (state.workDays || []).slice().sort((a,b) => b.start.localeCompare(a.start));
+  const byId = new Map(state.employees.map(e => [e.id,e]));
+  return `<section class="card" style="margin-top:var(--space-4)"><div class="card-head"><div><h3>Días de trabajo de refuerzo</h3><p class="small muted">Registros independientes de las ausencias</p></div><button type="button" class="btn btn-primary btn-sm" onclick="app.openWorkDay()">${icon('solar:add-circle-linear',16)} Añadir días</button></div>
+  ${entries.length ? `<div class="record-table">${entries.map(w => { const e=byId.get(w.employeeId); return `<div class="record-row" style="display:grid;grid-template-columns:1.2fr 1.2fr 1.4fr auto;gap:10px;align-items:center;padding:12px;border-top:1px solid var(--outline-variant)"><b>${esc(e?.name || 'Empleado eliminado')}</b><span class="small">${fmt(w.start)}${w.end!==w.start?' – '+fmt(w.end):''}</span><span class="small muted">${w.startPart==='afternoon'?'Tarde':'Mañana'} – ${w.endPart==='morning'?'Mañana':'Tarde'}</span><span><button type="button" class="icon-btn btn-sm" aria-label="Editar" onclick="app.openWorkDay('${w.id}')">${icon('solar:pen-linear',16)}</button> <button type="button" class="icon-btn btn-sm" aria-label="Eliminar" onclick="app.deleteWorkDay('${w.id}')">${icon('solar:trash-bin-trash-linear',16)}</button></span></div>`; }).join('')}</div>` : '<div class="empty"><strong>Sin días de refuerzo</strong>Añade aquí los días en los que un empleado de refuerzo trabajará.</div>'}</section>`;
+}
+
+function openWorkDay(id = '', employeeId = ''){
+  const state=getState();
+  if(!state.employees.length){ toast('Primero añade un empleado'); window.app.go('empleados'); return; }
+  const w=(state.workDays||[]).find(x=>x.id===id) || {employeeId:employeeId || state.employees[0].id,start:iso(new Date()),end:iso(new Date()),startPart:'morning',endPart:'afternoon'};
+  openModal(`<div class="modal-head"><div><h2>${id?'Editar días de refuerzo':'Nuevo día de refuerzo'}</h2><p class="small muted">Indica el periodo y la franja de inicio y finalización</p></div><button type="button" class="icon-btn" onclick="app.closeModal()">${icon('solar:close-circle-linear',20)}</button></div>
+  <form onsubmit="app.saveWorkDay(event,'${id}')"><div class="field"><label>Empleado *</label><select name="employeeId">${state.employees.map(e=>`<option value="${e.id}" ${e.id===w.employeeId?'selected':''}>${esc(e.name)}</option>`).join('')}</select></div>
+  <div class="form-grid two"><div class="field"><label>Fecha inicial *</label><input id="workStart" name="start" type="date" required value="${w.start}" onchange="app.syncWorkEndMin()"></div><div class="field"><label>Comienza</label><select name="startPart"><option value="morning" ${w.startPart==='morning'?'selected':''}>Mañana</option><option value="afternoon" ${w.startPart==='afternoon'?'selected':''}>Tarde</option></select></div>
+  <div class="field"><label>Fecha final *</label><input id="workEnd" name="end" type="date" min="${w.start}" required value="${w.end}"></div><div class="field"><label>Finaliza</label><select name="endPart"><option value="morning" ${w.endPart==='morning'?'selected':''}>Mañana</option><option value="afternoon" ${w.endPart==='afternoon'?'selected':''}>Tarde</option></select></div></div>
+  <p class="help">Para un mismo día, el inicio no puede ser por la tarde y la finalización por la mañana.</p><div class="form-actions"><button type="submit" class="btn btn-primary">Guardar refuerzo</button>${id?`<button type="button" class="btn btn-danger" onclick="app.deleteWorkDay('${id}')">Eliminar</button>`:''}</div></form>`);
+}
+function syncWorkEndMin(){ const a=$('#workStart'), b=$('#workEnd'); if(!a||!b)return; b.min=a.value; if(b.value<a.value)b.value=a.value; }
+function saveWorkDay(ev,id){
+  ev.preventDefault(); const state=getState(); const f=new FormData(ev.target);
+  const start=String(f.get('start')), end=String(f.get('end')), startPart=String(f.get('startPart')), endPart=String(f.get('endPart'));
+  if(end<start){toast('La fecha final no puede ser anterior a la inicial');return;}
+  if(start===end && startPart==='afternoon' && endPart==='morning'){toast('En un mismo día, el final no puede ser anterior al inicio');return;}
+  const value={id:id||newId(),employeeId:String(f.get('employeeId')),start,end,startPart,endPart};
+  state.workDays=state.workDays||[]; if(id)state.workDays=state.workDays.map(x=>x.id===id?value:x); else state.workDays.push(value);
+  save(id?'Días de refuerzo modificados':'Días de refuerzo añadidos'); closeModal(); window.app.render(); toast('Días de refuerzo guardados');
+}
+function deleteWorkDay(id){const state=getState();if(!confirm('¿Eliminar este periodo de refuerzo?'))return;state.workDays=(state.workDays||[]).filter(x=>x.id!==id);save('Días de refuerzo eliminados');closeModal();window.app.render();toast('Periodo eliminado');}
+
+return { get renderRecords(){ return renderRecords; }, get renderWorkDays(){ return renderWorkDays; }, get openWorkDay(){ return openWorkDay; }, get saveWorkDay(){ return saveWorkDay; }, get deleteWorkDay(){ return deleteWorkDay; }, get syncWorkEndMin(){ return syncWorkEndMin; }, get openRecord(){ return openRecord; }, get toggleRecordFields(){ return toggleRecordFields; }, get previewVacationPart(){ return previewVacationPart; }, get syncRecordEndMin(){ return syncRecordEndMin; }, get saveRecord(){ return saveRecord; }, get deleteRecord(){ return deleteRecord; }, get openRecordForEmployee(){ return openRecordForEmployee; }, get openRecordForDate(){ return openRecordForDate; } };
 })();
 
 __mods["js/views/calendar.js"] = (function(){
@@ -1500,17 +1568,32 @@ function icon(name, size = 18){
   return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
 }
 
+function isSpecialGuardRestDate(employee,date,guards){
+  if(!employee?.alternateGuardRest || !employee.guardRestStart || date<employee.guardRestStart || !isGuardDate(date,guards)) return false;
+  const start= new Date(employee.guardRestStart+'T12:00:00');
+  const current= new Date(date+'T12:00:00');
+  const diff=Math.round((current-start)/86400000);
+  const cycleDays=Number(guards?.everyDays || 21);
+  const cycle=Math.floor(diff/cycleDays);
+  const target=new Date(start); target.setDate(target.getDate()+cycle*cycleDays+(cycle%2?2:0));
+  return iso(target)===date;
+}
+
 function daySummary(date, state){
   const rs = state.records.filter((r) => r.start <= date && r.end >= date);
+  const ws = (state.workDays || []).filter((w) => w.start <= date && w.end >= date);
   const guard = isGuardDate(date, state.settings.guards);
   const items = rs.map((r) => {
     const e = state.employees.find((x) => x.id === r.employeeId);
     return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i><b>${esc(e?.name || 'Empleado eliminado')}</b></span>${pill(r.type)}</div><div class="row" style="margin-top:4px"><span class="small muted">${fmt(r.start)} – ${fmt(r.end)}${r.type === 'vacaciones' ? ' · ' + (r.halfDay ? 'medio día' : recordDays(r, state.settings.holidays) + ' días laborables') : ''}</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openRecord('${r.id}')">Editar</button></div>${r.notes ? `<div class="small muted" style="margin-top:2px">${esc(r.notes)}</div>` : ''}</div>`;
   }).join('');
+  const workItems = ws.map(w => { const e=state.employees.find(x=>x.id===w.employeeId); const range=w.start===w.end?((w.startPart==='morning'?'Mañana':'Tarde')+' – '+(w.endPart==='morning'?'Mañana':'Tarde')):(date===w.start?'Desde '+(w.startPart==='afternoon'?'tarde':'mañana'):date===w.end?'Hasta '+(w.endPart==='morning'?'mañana':'tarde'):'Jornada completa'); return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e?.color||'#2d6cdf')}"></i><b>${esc(e?.name||'Empleado eliminado')}</b></span><span class="small">Refuerzo · ${range}</span></div><div class="row" style="margin-top:4px"><span class="small muted">Día de trabajo programado</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openWorkDay('${w.id}')">Editar</button></div></div>`; }).join('');
+  const guardRest = state.employees.filter(e => isSpecialGuardRestDate(e,date,state.settings.guards));
   return `<div class="card daydetail">
-    <div class="card-head"><div><h3>Resumen del ${fmt(date)}</h3><p class="small muted">${rs.length ? rs.length + ' ausencia(s)' : 'Sin ausencias'}</p></div><button type="button" class="btn btn-secondary btn-sm" onclick="app.openRecordForDate('${date}')">${icon('solar:add-circle-linear', 16)} Añadir</button></div>
+    <div class="card-head"><div><h3>Resumen del ${fmt(date)}</h3><p class="small muted">${rs.length ? rs.length + ' ausencia(s)' : 'Sin ausencias'} · ${ws.length} refuerzo(s)</p></div><button type="button" class="btn btn-secondary btn-sm" onclick="app.openRecordForDate('${date}')">${icon('solar:add-circle-linear', 16)} Añadir</button></div>
     ${guard ? `<div class="guardinfo" style="margin-bottom:var(--space-2)">${icon('solar:shield-warning-linear', 15)} Guardia informativa</div>` : ''}
-    ${items || '<div class="empty" style="padding:var(--space-4) 0"><strong>Día libre de ausencias</strong>No hay ausencias registradas para este día.</div>'}
+    ${guardRest.map(e=>`<div class="guard-rest-info" style="background:${esc(e.color)}18;border-left:4px solid ${esc(e.color)};padding:8px 10px;margin:6px 0;border-radius:6px;color:${esc(e.color)}"><b>${esc(e.name)} no trabaja</b></div>`).join('')}
+    ${items}${workItems}${(!items && !workItems && !guardRest.length) ? '<div class="empty" style="padding:var(--space-4) 0"><strong>Día libre de ausencias</strong>No hay ausencias ni refuerzos registrados para este día.</div>' : ''}
   </div>`;
 }
 
@@ -1528,13 +1611,17 @@ function renderCalendar(calDate, selectedDate){
   for (let d = 1; d <= days; d++) {
     const date = iso(new Date(y, m, d));
     const rs = state.records.filter((r) => r.start <= date && r.end >= date);
+    const ws = (state.workDays || []).filter((w) => w.start <= date && w.end >= date);
     const guard = isGuardDate(date, state.settings.guards);
+    const guardRest = state.employees.filter(e => isSpecialGuardRestDate(e,date,state.settings.guards));
     const today = date === iso(new Date());
     const dots = rs.slice(0, 4).map((r) => {
       const e = state.employees.find((x) => x.id === r.employeeId);
       return `<i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i>`;
     }).join('');
-    cells += `<div class="day ${guard ? 'guardday' : ''} ${today ? 'today' : ''} ${selectedDate === date ? 'selected' : ''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d}</span>${rs.length ? `<span class="day-count">${rs.length}</span><span class="day-dots">${dots}</span>` : ''}${guard ? '<span class="guardtag">GUARDIA</span>' : ''}</div>`;
+    const squares = ws.slice(0,3).map(w=>{const e=state.employees.find(x=>x.id===w.employeeId);return `<i class="workday-square" title="Refuerzo: ${esc(e?.name||'')}" style="background:${esc(e?.color||'#2d6cdf')}"></i>`;}).join('');
+    const restTags = guardRest.map(e=>`<span class="guard-rest-tag" style="background:${esc(e.color)};color:#fff">${esc(e.name)} no trabaja</span>`).join('');
+    cells += `<div class="day ${guard ? 'guardday' : ''} ${today ? 'today' : ''} ${selectedDate === date ? 'selected' : ''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d}</span>${rs.length ? `<span class="day-count">${rs.length}</span><span class="day-dots">${dots}</span>` : ''}${squares ? `<span class="workday-squares">${squares}</span>` : ''}${guard ? '<span class="guardtag">GUARDIA</span>' : ''}${restTags}</div>`;
   }
 
   const runs = guardRuns(guardDatesInMonth(y, m, state.settings.guards));
@@ -1548,7 +1635,7 @@ function renderCalendar(calDate, selectedDate){
     <section class="card calendar-card">
       <div class="monthbar"><button type="button" class="icon-btn" aria-label="Mes anterior" onclick="app.changeMonth(-1)">${icon('solar:alt-arrow-left-linear', 20)}</button><strong>${monthLabel(y, m)}</strong><button type="button" class="icon-btn" aria-label="Mes siguiente" onclick="app.changeMonth(1)">${icon('solar:alt-arrow-right-linear', 20)}</button></div>
       <div class="calendar">${cells}</div>
-      <div class="legend"><span><i class="empdot" style="width:8px;height:8px;flex-basis:8px;background:var(--primary)"></i>Empleados con ausencia</span><span><i class="guard-swatch"></i>Guardia informativa</span></div>
+      <div class="legend"><span><i class="empdot" style="width:8px;height:8px;flex-basis:8px;background:var(--primary)"></i>Ausencias</span><span><i class="workday-square" style="background:var(--primary)"></i>Días de refuerzo</span><span><i class="guard-swatch"></i>Guardia informativa</span></div>
     </section>
     <aside class="day-panel">
       ${daySummary(summaryDate, state)}
@@ -1574,6 +1661,7 @@ function buildStateCSV(state){
   const rows = [['tipo', 'id', 'datos_json']];
   (state.employees || []).forEach((x) => rows.push(['empleado', x.id, JSON.stringify(x)]));
   (state.records || []).forEach((x) => rows.push(['registro', x.id, JSON.stringify(x)]));
+  (state.workDays || []).forEach((x) => rows.push(['refuerzo', x.id, JSON.stringify(x)]));
   rows.push(['ajustes', '', JSON.stringify(state.settings)]);
   return '\ufeff' + rows.map((r) => r.map(csvCell).join(';')).join('\r\n');
 }
@@ -1764,17 +1852,19 @@ function loadCSVBackup(){
       if (rows[0]?.[0] !== 'tipo' || rows[0]?.[2] !== 'datos_json') throw new Error('Formato');
       const employees = [];
       const records = [];
+      const workDays = [];
       let settings = null;
       for (const row of rows.slice(1)) {
         if (!row[0]) continue;
         const value = JSON.parse(row[2] || 'null');
         if (row[0] === 'empleado') employees.push(value);
         else if (row[0] === 'registro') records.push(value);
+        else if (row[0] === 'refuerzo') workDays.push(value);
         else if (row[0] === 'ajustes') settings = value;
       }
       if (!settings || !Array.isArray(employees) || !Array.isArray(records)) throw new Error('Datos incompletos');
       if (!confirm('La carga del CSV sustituirá empleados, ausencias y ajustes actuales. ¿Continuar?')) return;
-      replaceState({ employees, records, settings });
+      replaceState({ employees, records, workDays, settings });
       window.app.render();
       toast('Datos CSV cargados correctamente');
     } catch (e) {
@@ -1837,9 +1927,10 @@ function openReportOptions(){
   ])].sort((a, b) => b - a);
   const years = [currentYear, ...allYears.filter((y) => y !== currentYear)];
 
-  openModal(`<div class="modal-head"><div><h2>Configurar informe</h2><p class="small muted">Elige años y empleados. Solo se incluirán ausencias.</p></div><button type="button" class="icon-btn" aria-label="Cerrar" onclick="app.closeModal()">${icon('solar:close-circle-linear', 20)}</button></div>
+  openModal(`<div class="modal-head"><div><h2>Configurar informe</h2><p class="small muted">Elige años, empleados y si deseas incluir los días de refuerzo.</p></div><button type="button" class="icon-btn" aria-label="Cerrar" onclick="app.closeModal()">${icon('solar:close-circle-linear', 20)}</button></div>
   <div class="row" style="margin-bottom:var(--space-2)"><b>Años</b><div style="display:flex;gap:4px"><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportYear',true)">Todos</button><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportYear',false)">Ninguno</button></div></div>
   <div class="check-list" style="margin-bottom:var(--space-4)">${years.map((y) => `<label><input class="reportYear" type="checkbox" value="${y}" ${y === currentYear ? 'checked' : ''}> <span>${y}</span></label>`).join('')}</div>
+  <label style="display:flex;align-items:center;gap:8px;margin:0 0 var(--space-3)"><input id="reportIncludeWorkDays" type="checkbox" checked> Incluir días de trabajo de refuerzo</label>
   <div class="row" style="margin-bottom:var(--space-2)"><b>Empleados</b><div style="display:flex;gap:4px"><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportEmployee',true)">Todos</button><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportEmployee',false)">Ninguno</button></div></div>
   <div class="check-list" style="margin-bottom:var(--space-4)">${state.employees.map((e) => `<label><input class="reportEmployee" type="checkbox" value="${e.id}" checked><i class="empdot" style="background:${esc(e.color || '#2d6cdf')}"></i><span>${esc(e.name)}</span></label>`).join('') || '<div class="empty" style="padding:var(--space-4) 0"><strong>Sin empleados</strong>Añade empleados para generar informes.</div>'}</div>
   <div class="form-actions"><button type="button" class="btn btn-secondary" onclick="app.closeModal()">Cancelar</button><button type="button" class="btn btn-primary" onclick="app.generateReport()">Generar informe</button></div>`);
@@ -1855,6 +1946,7 @@ function generateReport(){
   const employeeIds = [...document.querySelectorAll('#sheet .reportEmployee:checked')].map((x) => x.value);
   if (!years.length || !employeeIds.length) { toast('Selecciona al menos un año y un empleado'); return; }
 
+  const includeWorkDays = !!document.querySelector('#sheet #reportIncludeWorkDays')?.checked;
   const selectedEmployees = state.employees.filter((e) => employeeIds.includes(e.id));
   const records = state.records
     .filter((r) => employeeIds.includes(r.employeeId) && years.some((y) => r.start <= `${y}-12-31` && r.end >= `${y}-01-01`))
@@ -1863,8 +1955,8 @@ function generateReport(){
 
   const groups = selectedEmployees.map((e) => {
     const rs = records.filter((r) => r.employeeId === e.id);
-    const body = rs.length
-      ? `<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Fecha(s)</th><th>Duración</th><th>Observaciones</th></tr></thead><tbody>${rs.map((r) => {
+    const ws = includeWorkDays ? (state.workDays || []).filter(w => w.employeeId===e.id && years.some(y=>w.start<=`${y}-12-31` && w.end>=`${y}-01-01`)) : [];
+    const rows = rs.map((r) => {
           const shownYears = years.filter((y) => r.start <= `${y}-12-31` && r.end >= `${y}-01-01`);
           const dates = shownYears.map((y) => {
             const a = r.start < `${y}-01-01` ? `${y}-01-01` : r.start;
@@ -1875,14 +1967,23 @@ function generateReport(){
             ? (r.halfDay ? 'Medio día (0,5)' : shownYears.reduce((n, y) => n + recordDaysInYear(r, y, state.settings.holidays), 0) + ' días laborables')
             : esc(r.duration || '—');
           return `<tr><td>${pill(r.type)}</td><td>${dates}</td><td>${duration}</td><td>${esc(r.notes || '')}</td></tr>`;
-        }).join('')}</tbody></table></div>`
-      : '<p class="small muted">Sin ausencias en los años seleccionados.</p>';
+        });
+    const workRows = ws.map(w => {
+      const shownYears=years.filter(y=>w.start<=`${y}-12-31` && w.end>=`${y}-01-01`);
+      const dates=shownYears.map(y=>{const a=w.start<`${y}-01-01`?`${y}-01-01`:w.start;const b=w.end>`${y}-12-31`?`${y}-12-31`:w.end;return a===b?fmt(a):`${fmt(a)} – ${fmt(b)}`;}).join('<br>');
+      const range=`${w.startPart==='afternoon'?'Tarde':'Mañana'} – ${w.endPart==='morning'?'Mañana':'Tarde'}`;
+      return `<tr><td>Refuerzo</td><td>${dates}</td><td>${range}</td><td></td></tr>`;
+    });
+    const allRows=[...rows,...workRows];
+    const body = allRows.length
+      ? `<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Fecha(s)</th><th>Duración</th><th>Observaciones</th></tr></thead><tbody>${allRows.join('')}</tbody></table></div>`
+      : '<p class="small muted">Sin ausencias ni refuerzos en los años seleccionados.</p>';
     return `<section class="report-group"><h3><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(e.color || '#2d6cdf')};margin-right:7px"></span>${esc(e.name)}${e.department ? ' · ' + esc(e.department) : ''}</h3>${body}</section>`;
   }).join('');
 
   closeModal();
   const screen = $('#reportScreen');
-  screen.innerHTML = `<div class="report-toolbar"><button type="button" class="btn btn-secondary" onclick="app.closeReport()">${icon('solar:alt-arrow-left-linear', 18)} Volver</button><button type="button" class="btn btn-secondary" onclick="app.createReportImages()">${icon('solar:gallery-add-linear', 18)} Crear imágenes</button><button type="button" class="btn btn-primary" onclick="window.print()">${icon('solar:printer-linear', 18)} Imprimir</button></div><article class="report-paper"><h1>Informe de ausencias</h1><p class="small muted"><b>Año(s):</b> ${period} · <b>Generado:</b> ${fmt(iso(new Date()))} · <b>Empleados:</b> ${selectedEmployees.length} · <b>Registros:</b> ${records.length}</p>${groups || '<p>No hay ausencias para los filtros seleccionados.</p>'}<p class="small muted" style="margin-top:var(--space-5)">Documento interno generado desde Control de ausencias. Datos guardados localmente en el navegador.</p></article>`;
+  screen.innerHTML = `<div class="report-toolbar"><button type="button" class="btn btn-secondary" onclick="app.closeReport()">${icon('solar:alt-arrow-left-linear', 18)} Volver</button><button type="button" class="btn btn-secondary" onclick="app.createReportImages()">${icon('solar:gallery-add-linear', 18)} Crear imágenes</button><button type="button" class="btn btn-primary" onclick="window.print()">${icon('solar:printer-linear', 18)} Imprimir</button></div><article class="report-paper"><h1>Informe de ausencias</h1><p class="small muted"><b>Año(s):</b> ${period} · <b>Generado:</b> ${fmt(iso(new Date()))} · <b>Empleados:</b> ${selectedEmployees.length} · <b>Ausencias:</b> ${records.length} · <b>Refuerzos:</b> ${includeWorkDays ? (state.workDays || []).filter(w=>employeeIds.includes(w.employeeId) && years.some(y=>w.start<=`${y}-12-31` && w.end>=`${y}-01-01`)).length : 0}</p>${groups || '<p>No hay ausencias para los filtros seleccionados.</p>'}<p class="small muted" style="margin-top:var(--space-5)">Documento interno generado desde Control de ausencias. Datos guardados localmente en el navegador.</p></article>`;
   screen.classList.add('show');
 }
 
@@ -2044,7 +2145,7 @@ const { iso } = __mods["js/dates.js"];
 const { closeModal, toast } = __mods["js/ui.js"];
 const { renderHome } = __mods["js/views/home.js"];
 const { renderEmployees, openEmployee, saveEmployee, deleteEmployee } = __mods["js/views/employees.js"];
-const { renderRecords, openRecord, saveRecord, deleteRecord, openRecordForEmployee, openRecordForDate, toggleRecordFields, previewVacationPart } = __mods["js/views/records.js"];
+const { renderRecords, renderWorkDays, openWorkDay, saveWorkDay, deleteWorkDay, syncWorkEndMin, syncRecordEndMin, openRecord, saveRecord, deleteRecord, openRecordForEmployee, openRecordForDate, toggleRecordFields, previewVacationPart } = __mods["js/views/records.js"];
 const { renderCalendar } = __mods["js/views/calendar.js"];
 const { renderSettings, saveGuardSettings, saveSettings, restoreDefaultHolidays, saveCSVBackup, loadCSVBackup, exportCSV, backup, restore } = __mods["js/views/settings.js"];
 const { openReportOptions, toggleChecks, generateReport, createReportImages, closeReport } = __mods["js/report.js"];
@@ -2065,7 +2166,7 @@ function render(){
   if (tab === 'inicio') app.innerHTML = renderHome();
   else if (tab === 'empleados') app.innerHTML = renderEmployees();
   else if (tab === 'calendario') app.innerHTML = renderCalendar(calDate, selectedDate);
-  else if (tab === 'registros') app.innerHTML = renderRecords();
+  else if (tab === 'registros') app.innerHTML = renderRecords() + renderWorkDays();
   else if (tab === 'ajustes') app.innerHTML = renderSettings();
 }
 
@@ -2133,7 +2234,8 @@ function handleUndo(){
 window.app = {
   render, go, setYear, selectDay, changeMonth, filterEmployees, filterRecords,
   openEmployee, saveEmployee, deleteEmployee,
-  openRecord, saveRecord, deleteRecord, openRecordForEmployee, openRecordForDate, toggleRecordFields, previewVacationPart,
+  openRecord, saveRecord, deleteRecord, openRecordForEmployee, openRecordForDate, toggleRecordFields, previewVacationPart, syncRecordEndMin,
+  openWorkDay, saveWorkDay, deleteWorkDay, syncWorkEndMin,
   saveGuardSettings, saveSettings, restoreDefaultHolidays,
   saveCSVBackup, loadCSVBackup, exportCSV, backup, restore,
   openReportOptions, toggleChecks, generateReport, createReportImages, closeReport,
