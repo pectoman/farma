@@ -564,7 +564,7 @@ body.modal-open{overflow:hidden}
   .calendar{gap:3px}
   .day{min-height:52px;padding:3px}
   .day-name{font-size:9px}
-  .guardtag{font-size:6px;padding:1px 3px;right:3px;bottom:3px}
+  .guardtag{font-size:6px;padding:1px 3px;right:3px;bottom:3px;max-width:calc(100% - 6px);overflow:hidden;text-overflow:ellipsis}
   .day.guardday .day-dots{bottom:14px}
   .report-paper{padding:var(--space-4)}
 }
@@ -805,6 +805,7 @@ function createDefaultState(){
   return {
     employees: [],
     records: [],
+    workDays: [],
     settings: {
       annualDays: 22,
       workweek: 'monfri',
@@ -865,7 +866,8 @@ function normalizeState(raw){
       end: r.end || r.start,
       type: r.type || 'vacaciones'
     }));
-  return { employees, records, settings };
+  const workDays = Array.isArray(raw.workDays) ? raw.workDays.filter(w => w && w.id && ids.has(w.employeeId) && w.start && w.end).map(w => ({...w, end:w.end || w.start, mode:w.mode === 'weekends-holidays' ? 'weekends-holidays' : 'period', dates:Array.isArray(w.dates) ? w.dates : []})) : [];
+  return { employees, records, workDays, settings };
 }
 
 function dataSnapshot(state){
@@ -1273,6 +1275,11 @@ function openEmployee(id = ''){
       <div class="field"><label for="empEntitlement">Días laborables de vacaciones al año</label><input id="empEntitlement" name="entitlement" type="number" min="0" step=".5" value="${e.entitlement ?? state.settings.annualDays}"></div>
       <div class="field"><label for="empCarry">Días pendientes de años anteriores</label><input id="empCarry" name="carry" type="number" step=".5" value="${e.carry || 0}"></div>
     </div>
+    <div class="field"><label for="empSpecialGuard">Horario especial de guardias alternas</label><select id="empSpecialGuard" name="specialGuard" onchange="document.getElementById('specialGuardFields').style.display=this.value==='yes'?'block':'none'"><option value="no" ${!e.specialGuard ? 'selected' : ''}>No</option><option value="yes" ${e.specialGuard ? 'selected' : ''}>Sí</option></select><p class="help">Alterna una semana libre el miércoles y la siguiente el viernes. También permite indicar el inicio del ciclo y la mañana de cada tercer ciclo.</p></div>
+    <div id="specialGuardFields" style="display:${e.specialGuard ? 'block' : 'none'}">
+      <div class="field"><label for="empGuardAnchor">Fecha de inicio del ciclo (semana que libra miércoles)</label><input id="empGuardAnchor" name="guardAnchor" type="date" value="${esc(e.guardAnchor || '')}"></div>
+      <div class="field"><label for="empMorningCycle">Turno de mañana cada 3 ciclos</label><select id="empMorningCycle" name="morningCycle"><option value="1" ${Number(e.morningCycle || 1)===1?'selected':''}>1.º ciclo</option><option value="2" ${Number(e.morningCycle || 1)===2?'selected':''}>2.º ciclo</option><option value="3" ${Number(e.morningCycle || 1)===3?'selected':''}>3.º ciclo</option></select><p class="help">El patrón de mañana se repite cada tres ciclos semanales.</p></div>
+    </div>
     <div class="field"><label for="empColor">Color identificativo</label><input id="empColor" name="color" type="color" value="${esc(e.color || '#2d6cdf')}"></div>
     <div class="form-actions"><button type="submit" class="btn btn-primary">Guardar empleado</button>${id ? `<button type="button" class="btn btn-danger" onclick="app.deleteEmployee('${id}')">Eliminar</button>` : ''}</div>
   </form>`);
@@ -1290,7 +1297,10 @@ function saveEmployee(ev, id){
     department: String(f.get('department') || '').trim(),
     color: f.get('color') || old?.color || '#2d6cdf',
     entitlement: Number(f.get('entitlement')),
-    carry: Number(f.get('carry'))
+    carry: Number(f.get('carry')),
+    specialGuard: f.get('specialGuard') === 'yes',
+    guardAnchor: String(f.get('guardAnchor') || ''),
+    morningCycle: Number(f.get('morningCycle') || 1)
   };
   if (id) state.employees = state.employees.map((x) => (x.id === id ? value : x));
   else state.employees.push(value);
@@ -1305,6 +1315,7 @@ function deleteEmployee(id){
   if (!confirm('¿Eliminar empleado? Sus registros también se eliminarán.')) return;
   state.employees = state.employees.filter((e) => e.id !== id);
   state.records = state.records.filter((r) => r.employeeId !== id);
+  state.workDays = (state.workDays || []).filter((w) => w.employeeId !== id);
   save('Empleado eliminado');
   closeModal();
   window.app.render();
@@ -1442,6 +1453,24 @@ function saveRecord(ev, id){
     delete value.daysOverride;
   }
 
+  if (value.type === 'vacaciones') {
+    const employee = state.employees.find(e => e.id === value.employeeId);
+    const oldRecord = id ? state.records.find(r => r.id === id) : null;
+    const proposed = value.halfDay ? 0.5 : workingDays(start, end, state.settings.holidays);
+    const years = [];
+    for (let yr = Number(start.slice(0,4)); yr <= Number(end.slice(0,4)); yr++) years.push(yr);
+    for (const yr of years) {
+      const existing = state.records.filter(r => r.employeeId === value.employeeId && r.type === 'vacaciones' && r.id !== id)
+        .reduce((sum,r) => sum + __mods["js/dates.js"].recordDaysInYear(r,yr,state.settings.holidays),0);
+      const proposedYear = __mods["js/dates.js"].recordDaysInYear(value,yr,state.settings.holidays);
+      const entitlement = Number(employee?.entitlement ?? state.settings.annualDays) + Number(employee?.carry || 0);
+      if (existing + proposedYear > entitlement + 1e-9) {
+        toast(`No se puede guardar: en ${yr} se superarían los ${entitlement} días disponibles. Ya hay ${existing} días asignados y esta ausencia añade ${proposedYear}.`);
+        return;
+      }
+    }
+  }
+
   const overlaps = state.records.filter((x) => x.id !== id && x.employeeId === value.employeeId && x.start <= value.end && x.end >= value.start);
   if (overlaps.length) {
     const details = overlaps.map((x) => `${typeLabel(x.type)} (${fmt(x.start)}${x.end !== x.start ? ' – ' + fmt(x.end) : ''})`).join('\n');
@@ -1484,6 +1513,23 @@ function openRecordForDate(date){
 return { get renderRecords(){ return renderRecords; }, get openRecord(){ return openRecord; }, get toggleRecordFields(){ return toggleRecordFields; }, get previewVacationPart(){ return previewVacationPart; }, get saveRecord(){ return saveRecord; }, get deleteRecord(){ return deleteRecord; }, get openRecordForEmployee(){ return openRecordForEmployee; }, get openRecordForDate(){ return openRecordForDate; } };
 })();
 
+__mods["js/views/workdays.js"] = (function(){
+const { getState, save } = __mods["js/state.js"];
+const { fmt, iso } = __mods["js/dates.js"];
+const { esc, openModal, closeModal, toast, newId, $ } = __mods["js/ui.js"];
+function icon(name,size=18){ return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`; }
+function renderWorkDays(){
+ const st=getState(), list=[...(st.workDays||[])].sort((a,b)=>b.start.localeCompare(a.start));
+ const rows=list.map(w=>{const e=st.employees.find(x=>x.id===w.employeeId);return `<div class="record-row"><div class="rc-cell rc-emp" data-label="Empleado"><i class="empdot" style="background:${esc(e?.color||'#2d6cdf')}"></i><b>${esc(e?.name||'Empleado eliminado')}</b></div><div class="rc-cell" data-label="Tipo"><span class="pill other">Trabaja</span></div><div class="rc-cell rc-muted" data-label="Fechas">${fmt(w.start)}${w.end!==w.start?' – '+fmt(w.end):''}</div><div class="rc-cell rc-num" data-label="Días">${w.mode==='weekends-holidays'?'Fines de semana y festivos':'Periodo completo'}</div><div class="rc-cell rc-notes" data-label="Notas">Informativo · No descuenta vacaciones</div><div class="rc-cell rc-actions"><button class="icon-btn btn-sm" onclick="app.deleteWorkDay('${w.id}')" aria-label="Eliminar">${icon('solar:trash-bin-trash-linear',16)}</button></div></div>`}).join('');
+ return `<section class="card" style="margin-top:var(--space-4)"><div class="page-head"><div><h3>Días de trabajo específicos</h3><p class="page-sub">Apoyos y jornadas excepcionales. No afectan al saldo de vacaciones.</p></div><button class="btn btn-primary" onclick="app.openWorkDay()">${icon('solar:add-circle-linear')} Añadir días</button></div><div class="record-table">${rows||'<div class="empty"><strong>Sin días de trabajo específicos</strong>Aquí aparecerán los apoyos y jornadas especiales.</div>'}</div></section>`;
+}
+function openWorkDay(){const st=getState();if(!st.employees.length){toast('Primero añade un empleado');return;}const today=iso(new Date());openModal(`<div class="modal-head"><div><h2>Añadir días de trabajo</h2><p class="small muted">Registro informativo independiente de las ausencias</p></div><button class="icon-btn" onclick="app.closeModal()">${icon('solar:close-circle-linear')}</button></div><form onsubmit="app.saveWorkDay(event)"><div class="field"><label>Tipo</label><select name="type" disabled><option selected>Trabaja</option></select></div><div class="field"><label>Empleado *</label><select name="employeeId">${st.employees.map(e=>`<option value="${e.id}">${esc(e.name)}</option>`).join('')}</select></div><div class="form-grid two"><div class="field"><label>Fecha inicial *</label><input type="date" name="start" required value="${today}"></div><div class="field"><label>Fecha final *</label><input type="date" name="end" required value="${today}"></div></div><div class="field"><label>Asignación de días</label><input type="hidden" name="mode" id="workMode" value="period"><button type="button" class="btn btn-secondary btn-block" id="weekendHolidayBtn" onclick="app.toggleWorkMode()">${icon('solar:calendar-add-linear')} Incluir sábados, domingos y festivos</button><p class="help" id="workModeHelp">Por defecto se asignarán todos los días del periodo. Pulsa el botón para seleccionar únicamente fines de semana y festivos.</p></div><div class="form-actions"><button class="btn btn-primary" type="submit">Guardar días de trabajo</button></div></form>`);}
+function toggleWorkMode(){const input=$('#workMode'),btn=$('#weekendHolidayBtn'),help=$('#workModeHelp');if(!input)return;const active=input.value!=='weekends-holidays';input.value=active?'weekends-holidays':'period';btn.textContent=active?'✓ Solo sábados, domingos y festivos':'Incluir sábados, domingos y festivos';btn.classList.toggle('btn-primary',active);btn.classList.toggle('btn-secondary',!active);help.textContent=active?'Se generarán únicamente los sábados, domingos y festivos incluidos entre las fechas.':'Por defecto se asignarán todos los días del periodo.';}
+function saveWorkDay(ev){ev.preventDefault();const st=getState(),f=new FormData(ev.target),start=String(f.get('start')),end=String(f.get('end')),mode=String(f.get('mode'));if(end<start){toast('La fecha final no puede ser anterior');return;}const dates=[];if(mode==='weekends-holidays'){const d=new Date(start+'T12:00:00'),last=new Date(end+'T12:00:00'),hol=new Set(st.settings.holidays||[]);while(d<=last){const day=d.getDay(),ds=iso(d);if(day===0||day===6||hol.has(ds))dates.push(ds);d.setDate(d.getDate()+1);}if(!dates.length){toast('El periodo no contiene fines de semana ni festivos');return;}}st.workDays=st.workDays||[];st.workDays.push({id:newId(),employeeId:String(f.get('employeeId')),start,end,mode,dates});save('Días de trabajo añadidos');closeModal();window.app.render();toast('Días de trabajo guardados');}
+function deleteWorkDay(id){const st=getState();if(!confirm('¿Eliminar estos días de trabajo?'))return;st.workDays=(st.workDays||[]).filter(w=>w.id!==id);save('Días de trabajo eliminados');window.app.render();toast('Días eliminados');}
+return {get renderWorkDays(){return renderWorkDays},get openWorkDay(){return openWorkDay},get saveWorkDay(){return saveWorkDay},get toggleWorkMode(){return toggleWorkMode},get deleteWorkDay(){return deleteWorkDay}};
+})();
+
 __mods["js/views/calendar.js"] = (function(){
 const { getState } = __mods["js/state.js"];
 const { fmt, iso, recordDays, monthLabel } = __mods["js/dates.js"];
@@ -1494,9 +1540,13 @@ function icon(name, size = 18){
   return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
 }
 
+function specialRest(e,date){ if(!e?.specialGuard || !e.guardAnchor) return false; const a=new Date(e.guardAnchor+'T12:00:00'), d=new Date(date+'T12:00:00'); const diff=Math.floor((d-a)/86400000); if(diff<0)return false; const week=Math.floor(diff/7); const weekday=d.getDay(); return week%2===0 ? weekday===3 : weekday===5; }
+function workDayMatches(w,date){ return w.mode==='weekends-holidays' ? (w.dates||[]).includes(date) : w.start<=date && w.end>=date; }
 function daySummary(date, state){
   const rs = state.records.filter((r) => r.start <= date && r.end >= date);
   const guard = isGuardDate(date, state.settings.guards);
+  const rests=state.employees.filter(e=>specialRest(e,date));
+  const works=(state.workDays||[]).filter(w=>workDayMatches(w,date));
   const items = rs.map((r) => {
     const e = state.employees.find((x) => x.id === r.employeeId);
     return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i><b>${esc(e?.name || 'Empleado eliminado')}</b></span>${pill(r.type)}</div><div class="row" style="margin-top:4px"><span class="small muted">${fmt(r.start)} – ${fmt(r.end)}${r.type === 'vacaciones' ? ' · ' + (r.halfDay ? 'medio día' : recordDays(r, state.settings.holidays) + ' días laborables') : ''}</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openRecord('${r.id}')">Editar</button></div>${r.notes ? `<div class="small muted" style="margin-top:2px">${esc(r.notes)}</div>` : ''}</div>`;
@@ -1504,6 +1554,8 @@ function daySummary(date, state){
   return `<div class="card daydetail">
     <div class="card-head"><div><h3>Resumen del ${fmt(date)}</h3><p class="small muted">${rs.length ? rs.length + ' ausencia(s)' : 'Sin ausencias'}</p></div><button type="button" class="btn btn-secondary btn-sm" onclick="app.openRecordForDate('${date}')">${icon('solar:add-circle-linear', 16)} Añadir</button></div>
     ${guard ? `<div class="guardinfo" style="margin-bottom:var(--space-2)">${icon('solar:shield-warning-linear', 15)} Guardia informativa</div>` : ''}
+    ${rests.map(e=>`<div class="item"><span class="empmark"><i class="empdot" style="background:${esc(e.color)}"></i><b>${esc(e.name)}</b></span><span class="pill" style="color:${esc(e.color)};border-color:${esc(e.color)};background:#fff">No trabaja</span></div>`).join('')}
+    ${works.map(w=>{const e=state.employees.find(x=>x.id===w.employeeId);return `<div class="item"><span class="empmark"><i class="empdot" style="background:${esc(e?.color||'#2d6cdf')}"></i><b>${esc(e?.name||'Empleado')}</b></span><span class="pill other">Trabaja</span></div>`}).join('')}
     ${items || '<div class="empty" style="padding:var(--space-4) 0"><strong>Día libre de ausencias</strong>No hay ausencias registradas para este día.</div>'}
   </div>`;
 }
@@ -1523,12 +1575,12 @@ function renderCalendar(calDate, selectedDate){
     const date = iso(new Date(y, m, d));
     const rs = state.records.filter((r) => r.start <= date && r.end >= date);
     const guard = isGuardDate(date, state.settings.guards);
+    const rests=state.employees.filter(e=>specialRest(e,date));
+    const works=(state.workDays||[]).filter(w=>workDayMatches(w,date));
     const today = date === iso(new Date());
-    const dots = rs.slice(0, 4).map((r) => {
-      const e = state.employees.find((x) => x.id === r.employeeId);
-      return `<i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i>`;
-    }).join('');
-    cells += `<div class="day ${guard ? 'guardday' : ''} ${today ? 'today' : ''} ${selectedDate === date ? 'selected' : ''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d}</span>${rs.length ? `<span class="day-count">${rs.length}</span><span class="day-dots">${dots}</span>` : ''}${guard ? '<span class="guardtag">GUARDIA</span>' : ''}</div>`;
+    const dots = [...rs.map(r=>state.employees.find(x=>x.id===r.employeeId)),...rests,...works.map(w=>state.employees.find(x=>x.id===w.employeeId))].filter(Boolean).slice(0,6).map(e=>`<i class="empdot" style="background:${esc(e.color||'#2d6cdf')}"></i>`).join('');
+    const labels=[...rests.map(e=>`<span class="guardtag" style="background:${esc(e.color)}">NO TRABAJA</span>`),...works.map(w=>{const e=state.employees.find(x=>x.id===w.employeeId);return e?`<span class="guardtag" style="background:${esc(e.color)};bottom:${rests.length?'16px':'4px'}">TRABAJA</span>`:''})].join('');
+    cells += `<div class="day ${guard ? 'guardday' : ''} ${today ? 'today' : ''} ${selectedDate === date ? 'selected' : ''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d}</span>${(rs.length||rests.length||works.length) ? `<span class="day-count">${rs.length+rests.length+works.length}</span><span class="day-dots">${dots}</span>` : ''}${guard ? '<span class="guardtag">GUARDIA</span>' : ''}${labels}</div>`;
   }
 
   const runs = guardRuns(guardDatesInMonth(y, m, state.settings.guards));
@@ -1568,6 +1620,7 @@ function buildStateCSV(state){
   const rows = [['tipo', 'id', 'datos_json']];
   (state.employees || []).forEach((x) => rows.push(['empleado', x.id, JSON.stringify(x)]));
   (state.records || []).forEach((x) => rows.push(['registro', x.id, JSON.stringify(x)]));
+  (state.workDays || []).forEach((x) => rows.push(['dia_trabajo', x.id, JSON.stringify(x)]));
   rows.push(['ajustes', '', JSON.stringify(state.settings)]);
   return '\ufeff' + rows.map((r) => r.map(csvCell).join(';')).join('\r\n');
 }
@@ -1758,17 +1811,19 @@ function loadCSVBackup(){
       if (rows[0]?.[0] !== 'tipo' || rows[0]?.[2] !== 'datos_json') throw new Error('Formato');
       const employees = [];
       const records = [];
+      const workDays = [];
       let settings = null;
       for (const row of rows.slice(1)) {
         if (!row[0]) continue;
         const value = JSON.parse(row[2] || 'null');
         if (row[0] === 'empleado') employees.push(value);
         else if (row[0] === 'registro') records.push(value);
+        else if (row[0] === 'dia_trabajo') workDays.push(value);
         else if (row[0] === 'ajustes') settings = value;
       }
       if (!settings || !Array.isArray(employees) || !Array.isArray(records)) throw new Error('Datos incompletos');
       if (!confirm('La carga del CSV sustituirá empleados, ausencias y ajustes actuales. ¿Continuar?')) return;
-      replaceState({ employees, records, settings });
+      replaceState({ employees, records, workDays, settings });
       window.app.render();
       toast('Datos CSV cargados correctamente');
     } catch (e) {
@@ -2040,6 +2095,7 @@ const { renderHome } = __mods["js/views/home.js"];
 const { renderEmployees, openEmployee, saveEmployee, deleteEmployee } = __mods["js/views/employees.js"];
 const { renderRecords, openRecord, saveRecord, deleteRecord, openRecordForEmployee, openRecordForDate, toggleRecordFields, previewVacationPart } = __mods["js/views/records.js"];
 const { renderCalendar } = __mods["js/views/calendar.js"];
+const { renderWorkDays, openWorkDay, saveWorkDay, deleteWorkDay } = __mods["js/views/workdays.js"];
 const { renderSettings, saveGuardSettings, saveSettings, restoreDefaultHolidays, saveCSVBackup, loadCSVBackup, exportCSV, backup, restore } = __mods["js/views/settings.js"];
 const { openReportOptions, toggleChecks, generateReport, createReportImages, closeReport } = __mods["js/report.js"];
 
@@ -2059,7 +2115,7 @@ function render(){
   if (tab === 'inicio') app.innerHTML = renderHome();
   else if (tab === 'empleados') app.innerHTML = renderEmployees();
   else if (tab === 'calendario') app.innerHTML = renderCalendar(calDate, selectedDate);
-  else if (tab === 'registros') app.innerHTML = renderRecords();
+  else if (tab === 'registros') app.innerHTML = renderRecords() + renderWorkDays();
   else if (tab === 'ajustes') app.innerHTML = renderSettings();
 }
 
@@ -2128,6 +2184,7 @@ window.app = {
   render, go, setYear, selectDay, changeMonth, filterEmployees, filterRecords,
   openEmployee, saveEmployee, deleteEmployee,
   openRecord, saveRecord, deleteRecord, openRecordForEmployee, openRecordForDate, toggleRecordFields, previewVacationPart,
+  openWorkDay, saveWorkDay, toggleWorkMode, deleteWorkDay,
   saveGuardSettings, saveSettings, restoreDefaultHolidays,
   saveCSVBackup, loadCSVBackup, exportCSV, backup, restore,
   openReportOptions, toggleChecks, generateReport, createReportImages, closeReport,
