@@ -3,203 +3,2157 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#17324d">
+<meta name="theme-color" content="#f8f9ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Ausencias">
-<link rel="manifest" href="manifest.webmanifest">
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js"></script>
-
-<title>Control de ausencias</title>
 <style>
-:root{--navy:#17324d;--blue:#2d6cdf;--bg:#f3f6fa;--card:#fff;--muted:#64748b;--line:#e3e9f0;--green:#198754;--orange:#d97706;--red:#c0392b}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#172536;padding-bottom:88px}
-header{background:var(--navy);color:#fff;padding:calc(16px + env(safe-area-inset-top)) 18px 18px;position:sticky;top:0;z-index:5}
-header h1{font-size:20px;margin:0 0 4px}header p{margin:0;color:#cbd7e4;font-size:12px}
-main{max-width:760px;margin:auto;padding:15px}
-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:10}
-nav button{border:0;background:none;color:var(--muted);font-size:11px;padding:5px 3px;display:flex;flex-direction:column;align-items:center;gap:3px}
-nav button b{font-size:20px;font-weight:500}nav button.active{color:var(--blue);font-weight:700}
-h2{font-size:18px;margin:8px 0 12px}.muted{color:var(--muted)}.small{font-size:12px}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:14px;margin-bottom:11px;box-shadow:0 2px 8px #1c35500a}
-.stat .num{font-size:26px;font-weight:750;color:var(--navy);margin-top:5px}.stat .lbl{font-size:12px;color:var(--muted)}
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.row.wrap{flex-wrap:wrap}
-button,.btn{border:0;border-radius:10px;background:var(--blue);color:#fff;padding:11px 14px;font-weight:650;font-size:14px;cursor:pointer}
-button.secondary{background:#eaf0f8;color:var(--navy)}button.danger{background:#fff0ef;color:var(--red)}button.ghost{background:transparent;color:var(--blue);padding:6px}
-input,select,textarea{width:100%;border:1px solid #ccd6e2;border-radius:10px;padding:11px;font:inherit;background:#fff;color:#172536}
-label{display:block;font-size:12px;color:var(--muted);font-weight:650;margin:10px 0 5px}
-form .actions{display:flex;gap:8px;margin-top:15px}form .actions>*{flex:1}
-.pill{display:inline-block;border-radius:99px;padding:4px 8px;font-size:11px;font-weight:700;background:#edf2f7;color:#43566b}
-.pill.vac{background:#e7f0ff;color:#2458ae}.pill.baja{background:#ffebe8;color:#b43c2e}.pill.med{background:#fff3d9;color:#98600b}.pill.other{background:#e9f7ef;color:#187347}
-.item{padding:11px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}
-.monthbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.monthbar strong{font-size:17px}
-.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px;width:100%;min-width:0}.calendar>*{min-width:0}.dayname{min-width:0}.day{min-width:0;overflow:hidden}.day .count{font-size:clamp(7px,2.2vw,9px)}
-.dayname{text-align:center;font-size:10px;color:var(--muted);padding:5px 0}
-.day{min-height:58px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px;font-size:11px;position:relative}
-.day.dim{opacity:.35}.day.selected{outline:2px solid var(--blue);outline-offset:-2px;background:#eaf2ff}.day{cursor:pointer}.empdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle;flex:0 0 9px}.empmark{display:inline-flex;align-items:center;gap:5px;min-width:0}.yearpick{width:auto;max-width:110px;padding:7px 9px}.daydetail{margin-top:12px}.day.today{border:2px solid var(--blue)}.day .count{display:block;font-size:9px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.empty{text-align:center;padding:28px 12px;color:var(--muted)}
-.guardtag{display:inline-block;background:#fee2e2;color:#991b1b;border-radius:99px;padding:3px 7px;font-size:9px;font-weight:700;margin-top:4px}.day.guardday{background:#fee2e2;border-color:#ef9a9a;color:#991b1b}.day.guardday .count{color:#2458ae;font-weight:700}
-.modal{position:fixed;inset:0;background:#10203388;z-index:20;display:none;align-items:flex-end;justify-content:center}
-.modal.show{display:flex}.sheet{background:var(--bg);width:100%;max-width:650px;max-height:92vh;overflow:auto;border-radius:20px 20px 0 0;padding:18px 16px calc(22px + env(safe-area-inset-bottom))}
-.image-pages{max-width:760px;margin:12px auto}.image-page{display:block;width:100%;height:auto;margin:0 auto 18px;border:1px solid var(--line);border-radius:10px;background:#fff;box-shadow:0 3px 14px #142b4b12;user-select:none;-webkit-user-select:none;-webkit-touch-callout:default}.image-help{max-width:760px;margin:0 auto 12px;padding:12px 14px;background:#eaf2ff;color:#234b8a;border-radius:12px;font-size:13px}.report-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:40;overflow:auto;padding:calc(14px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom))}.report-screen.show{display:block}.report-toolbar{max-width:760px;margin:0 auto 12px;display:flex;gap:8px;position:sticky;top:0;background:var(--bg);padding:4px 0;z-index:2}.report-paper{max-width:760px;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 2px 8px #1c35500a}.report-paper h1{font-size:21px}.report-paper table{width:100%;border-collapse:collapse;font-size:12px}.report-paper th,.report-paper td{border-bottom:1px solid #dce3eb;padding:8px 6px;text-align:left;vertical-align:top}.report-paper th{background:#f3f6fa}.report-group{margin-top:18px}.report-group h3{border-bottom:2px solid var(--line);padding-bottom:6px}.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#172536;color:#fff;padding:10px 16px;border-radius:20px;display:none;z-index:30;font-size:13px}
-@media(max-width:480px){main{padding:10px}.day{min-height:52px;padding:3px;font-size:10px}.guardtag{font-size:7px;padding:2px 4px}.calendar{gap:2px}.monthbar strong{font-size:15px}}
-@media(min-width:600px){.modal{align-items:center}.sheet{border-radius:18px}}
-@media print{body{background:#fff;padding:0}body>*:not(#reportScreen){display:none!important}#reportScreen{display:block!important;position:static;overflow:visible;padding:0;background:#fff}#reportScreen .report-toolbar{display:none!important}.report-paper{max-width:none;border:0;border-radius:0;box-shadow:none;padding:0}.report-paper h1{font-size:20px}.report-paper table{font-size:10px;page-break-inside:auto}.report-paper tr{page-break-inside:avoid;page-break-after:auto}.report-group{page-break-inside:avoid}}
+/* ========================================================================== */
+/* Control de ausencias — Design System (handoff)                              */
+/* ========================================================================== */
+:root{
+  /* Superficies */
+  --surface:#f8f9ff;
+  --surface-dim:#cbdbf5;
+  --surface-lowest:#ffffff;
+  --surface-low:#eff4ff;
+  --surface-container:#e4eeff;
+  --surface-high:#d8e5ff;
+  --surface-highest:#cbdbf5;
+  /* Texto y bordes */
+  --on-surface:#0b1c30;
+  --on-surface-variant:#424752;
+  --outline:#727783;
+  --outline-variant:#c2c6d4;
+  /* Marca */
+  --primary:#1e40af;
+  --primary-hover:#1d3899;
+  --primary-container:#e0e7ff;
+  --on-primary:#ffffff;
+  --on-primary-container:#1e3a8a;
+  /* Foco */
+  --focus-ring:#2563eb;
+  /* Error / peligro */
+  --error:#dc2626;
+  --error-hover:#b91c1c;
+  --on-error:#ffffff;
+  --error-container:#fef2f2;
+  --on-error-container:#991b1b;
+  --error-border:#fecaca;
+  /* Semántica de ausencias */
+  --vac:#2563eb;      --vac-bg:#eff6ff;      --vac-border:#bfdbfe;
+  --baja:#dc2626;     --baja-bg:#fef2f2;     --baja-border:#fecaca;
+  --visita:#d97706;   --visita-bg:#fffbeb;   --visita-border:#fde68a;
+  --permiso:#059669;  --permiso-bg:#ecfdf5;  --permiso-border:#a7f3d0;
+  --guardia:#be123c;  --guardia-bg:#fff1f2;  --guardia-border:#fecdd3;
+  /* Capas y transiciones */
+  --backdrop:rgba(11,28,48,.48);
+  --z-nav:50;
+  --z-modal:110;
+  --z-toast:150;
+  --t-fast:150ms cubic-bezier(.4,0,.2,1);
+  --t-normal:220ms cubic-bezier(.4,0,.2,1);
+  /* Tipografía */
+  --font:'Inter',ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  --text-xs:11px; --text-sm:12px; --text-base:13px; --text-md:14px;
+  --text-lg:16px; --text-xl:18px; --text-2xl:20px; --text-3xl:24px; --text-4xl:30px;
+  --leading-tight:1.15; --leading-snug:1.3; --leading-normal:1.45;
+  /* Espaciado */
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px;
+  --space-5:20px; --space-6:24px; --space-8:32px;
+  /* Radios y sombras */
+  --radius-xs:4px; --radius-sm:6px; --radius-md:8px; --radius-lg:12px;
+  --radius-xl:16px; --radius-2xl:20px; --radius-full:9999px;
+  --shadow-sm:0 1px 2px rgb(15 23 42 / .05);
+  --shadow-card:0 1px 3px rgb(15 23 42 / .06),0 1px 2px -1px rgb(15 23 42 / .05);
+  --shadow-md:0 4px 10px -2px rgb(15 23 42 / .08),0 2px 4px -2px rgb(15 23 42 / .05);
+  --shadow-modal:0 20px 25px -5px rgb(11 28 48 / .18),0 8px 10px -6px rgb(11 28 48 / .1);
+  /* Layout */
+  --content-max:1120px;
+  --header-h:64px;
+}
 
-/* UI responsive polish: Tailwind CDN utilities + refined native components */
-:root{--bg:#f5f7fb;--card:#fff;--line:#e5eaf2;--blue:#315fce;--navy:#172b4d}
-body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:linear-gradient(180deg,#eef3fb 0,#f7f9fc 230px);color:#172b4d}
-header{background:linear-gradient(115deg,#142b4b,#244b79);box-shadow:0 8px 28px #142b4b20}
-main{width:100%;max-width:900px;padding:clamp(12px,3vw,24px)}
-.card{border:1px solid #e6ebf3;border-radius:18px;box-shadow:0 5px 18px #23395b0a;padding:clamp(13px,2.5vw,19px)}
-button,.btn{transition:transform .15s ease,filter .15s ease;min-height:40px}button:active{transform:scale(.98)}
-input,select,textarea{border-color:#d6deea;border-radius:12px;min-height:42px}input:focus,select:focus,textarea:focus{outline:3px solid #315fce22;border-color:#315fce}
-nav{box-shadow:0 -6px 24px #142b4b0c;backdrop-filter:blur(14px);background:#ffffffed}nav button{flex:1;min-width:0;gap:4px;padding:7px 2px;font-size:10px}nav button iconify-icon{display:block}
-.item{padding:13px 0}.yearpick{min-height:40px;max-width:130px;border-radius:12px;font-weight:700}
-.report-toolbar button{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1}
-@media(min-width:760px){body{padding-bottom:30px}nav{position:sticky;top:auto;bottom:0;max-width:900px;margin:0 auto 18px;border:1px solid var(--line);border-radius:18px}nav button{font-size:12px}header{padding-left:max(18px,calc((100vw - 860px)/2));padding-right:max(18px,calc((100vw - 860px)/2))}}
-@media(max-width:380px){nav button{font-size:9px}.yearpick{max-width:112px}.report-paper{padding:12px}}
+/* ========================================================================== */
+/* Base                                                                       */
+/* ========================================================================== */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font);
+  font-size:var(--text-md);
+  line-height:var(--leading-normal);
+  color:var(--on-surface);
+  background:var(--surface);
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  padding-bottom:calc(72px + env(safe-area-inset-bottom));
+}
+h1,h2,h3,h4,p{margin:0}
+b,strong{font-weight:600}
+img,svg{max-width:100%}
+:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+::selection{background:var(--primary-container);color:var(--on-primary-container)}
+
+/* ========================================================================== */
+/* Cabecera y navegación                                                      */
+/* ========================================================================== */
+.app-header{
+  position:fixed;top:0;left:0;right:0;z-index:var(--z-nav);
+  background:rgba(248,249,255,.98);
+  border-bottom:1px solid var(--outline-variant);
+  padding-top:env(safe-area-inset-top);
+}
+.header-inner{
+  max-width:var(--content-max);margin:0 auto;height:var(--header-h);
+  padding:0 var(--space-4);display:flex;align-items:center;
+  gap:var(--space-3);justify-content:space-between;
+}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand-mark{
+  width:36px;height:36px;flex:0 0 36px;border-radius:10px;
+  background:var(--primary-container);color:var(--primary);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-text{min-width:0}
+.brand-title-row{display:flex;align-items:center;gap:8px;min-width:0}
+.brand h1{
+  font-size:var(--text-lg);font-weight:700;letter-spacing:-.015em;
+  color:var(--primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.local-chip{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:var(--radius-full);
+  background:var(--surface-container);color:var(--on-surface-variant);
+  font-size:10px;font-weight:600;white-space:nowrap;
+}
+.brand-sub{
+  font-size:var(--text-sm);color:var(--on-surface-variant);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;
+}
+.header-actions{display:flex;align-items:center;gap:var(--space-2);flex:0 0 auto}
+
+#nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:var(--z-nav);
+  display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  background:var(--surface-lowest);border-top:1px solid var(--outline-variant);
+  box-shadow:0 -4px 16px rgb(15 23 42 / .05);
+}
+#nav button{
+  flex:1;min-width:0;border:0;background:none;color:var(--on-surface-variant);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  min-height:44px;padding:5px 2px;border-radius:10px;cursor:pointer;
+  font-family:inherit;font-size:10px;font-weight:600;
+  transition:color var(--t-fast),background var(--t-fast);
+}
+#nav button iconify-icon{display:block}
+#nav button:hover{color:var(--primary)}
+#nav button.active{color:var(--primary);background:var(--surface-low)}
+
+/* ========================================================================== */
+/* Contenido                                                                  */
+/* ========================================================================== */
+.app-main{
+  width:100%;max-width:var(--content-max);margin:0 auto;
+  padding:calc(var(--header-h) + env(safe-area-inset-top) + 16px) var(--space-4) var(--space-6);
+}
+.page-head{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:var(--space-3);flex-wrap:wrap;margin-bottom:var(--space-4);
+}
+.page-title{font-size:var(--text-3xl);font-weight:700;letter-spacing:-.025em;line-height:var(--leading-tight)}
+.page-sub{font-size:var(--text-sm);color:var(--on-surface-variant);margin-top:2px}
+.page-actions{display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap}
+
+/* ========================================================================== */
+/* Botones                                                                    */
+/* ========================================================================== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:1px solid transparent;border-radius:10px;padding:0 14px;min-height:40px;
+  font-family:inherit;font-size:var(--text-md);font-weight:600;line-height:1;
+  cursor:pointer;white-space:nowrap;text-decoration:none;
+  transition:background var(--t-fast),color var(--t-fast),border-color var(--t-fast),box-shadow var(--t-fast),transform var(--t-fast);
+}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--primary);color:var(--on-primary);box-shadow:var(--shadow-sm)}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-secondary{background:var(--surface-low);color:var(--primary);border-color:var(--outline-variant)}
+.btn-secondary:hover{background:var(--surface-container)}
+.btn-ghost{background:transparent;color:var(--primary);padding:0 8px}
+.btn-ghost:hover{background:var(--surface-low)}
+.btn-danger{background:var(--error-container);color:var(--error);border-color:var(--error-border)}
+.btn-danger:hover{background:var(--error);color:var(--on-error)}
+.btn-block{width:100%}
+.btn-sm{min-height:32px;padding:0 10px;font-size:var(--text-sm);border-radius:8px}
+.icon-btn{
+  width:40px;height:40px;min-height:40px;flex:0 0 40px;padding:0;border-radius:10px;
+  border:1px solid transparent;background:var(--surface-low);color:var(--on-surface-variant);
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+  transition:background var(--t-fast),color var(--t-fast);
+}
+.icon-btn:hover{background:var(--surface-container);color:var(--on-surface)}
+.icon-btn.btn-sm{width:32px;height:32px;min-height:32px;flex-basis:32px}
+
+/* ========================================================================== */
+/* Formularios                                                                */
+/* ========================================================================== */
+label{display:block;font-size:var(--text-sm);font-weight:600;color:var(--on-surface-variant);margin:0 0 6px}
+input,select,textarea{
+  width:100%;border:1px solid var(--outline-variant);border-radius:10px;
+  background:var(--surface-lowest);color:var(--on-surface);
+  padding:10px 12px;font-family:inherit;font-size:var(--text-md);min-height:42px;
+  transition:border-color var(--t-fast),box-shadow var(--t-fast);
+}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgb(37 99 235 / .14);
+}
+textarea{min-height:84px;resize:vertical}
+input[type="color"]{padding:4px;height:46px}
+input[type="file"]{padding:8px;font-size:var(--text-sm)}
+input[type="file"]::file-selector-button{
+  font-family:inherit;font-size:var(--text-sm);font-weight:600;
+  border:0;border-radius:8px;background:var(--surface-low);color:var(--primary);
+  padding:6px 10px;margin-right:8px;cursor:pointer;
+}
+input[type="file"]::file-selector-button:hover{background:var(--surface-container)}
+input[type="checkbox"],input[type="radio"]{width:auto;min-height:auto;accent-color:var(--primary)}
+.field{margin-bottom:var(--space-3)}
+.help{font-size:var(--text-sm);color:var(--on-surface-variant);margin-top:6px;line-height:var(--leading-snug)}
+.form-grid{display:grid;gap:var(--space-3)}
+.form-grid.two{grid-template-columns:1fr}
+.form-actions{display:flex;gap:var(--space-2);margin-top:var(--space-4)}
+.form-actions>*{flex:1}
+@media(min-width:600px){.form-grid.two{grid-template-columns:1fr 1fr}}
+
+/* ========================================================================== */
+/* Tarjetas y utilidades                                                      */
+/* ========================================================================== */
+.card{
+  background:var(--surface-lowest);border:1px solid var(--outline-variant);
+  border-radius:var(--radius-xl);padding:var(--space-4);box-shadow:var(--shadow-card);
+}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-2);margin-bottom:var(--space-3)}
+.card-head h3{font-size:var(--text-lg);font-weight:600;letter-spacing:-.01em}
+.card h2{font-size:var(--text-xl);font-weight:600;letter-spacing:-.01em}
+.card h3{font-size:var(--text-lg);font-weight:600}
+.row{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2)}
+.row.wrap{flex-wrap:wrap}
+.stack{display:flex;flex-direction:column;gap:var(--space-3)}
+.muted{color:var(--on-surface-variant)}
+.small{font-size:var(--text-sm)}
+.item{padding:var(--space-3) 0;border-bottom:1px solid var(--outline-variant)}
+.item:last-child{border-bottom:0}
+.item:first-child{padding-top:0}
+.empty{text-align:center;padding:var(--space-8) var(--space-4);color:var(--on-surface-variant)}
+.empty strong{display:block;color:var(--on-surface);font-size:var(--text-md);margin-bottom:4px}
+.empmark{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.empmark b{display:block;font-size:var(--text-md);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empdot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:0 0 10px}
+hr{border:0;border-top:1px solid var(--outline-variant);margin:var(--space-4) 0}
+.w-full{width:100%}
+.mt-2{margin-top:var(--space-2)}
+.mt-3{margin-top:var(--space-3)}
+.hidden{display:none!important}
+
+/* ========================================================================== */
+/* KPIs y dashboard                                                           */
+/* ========================================================================== */
+.year-control{
+  display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 10px;
+  background:var(--surface-lowest);border:1px solid var(--outline-variant);
+  border-radius:10px;color:var(--primary);
+}
+.year-control .yearpick{
+  width:auto;min-height:auto;border:0;border-radius:0;padding:0 4px;
+  background:transparent;color:var(--primary);font-weight:700;font-size:var(--text-md);
+}
+.year-control .yearpick:focus{box-shadow:none}
+
+.stats-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);margin-bottom:var(--space-4)}
+.kpi-card{
+  display:flex;flex-direction:column;gap:6px;min-height:104px;
+  background:var(--surface-lowest);border:1px solid var(--outline-variant);
+  border-radius:var(--radius-xl);padding:var(--space-3);box-shadow:var(--shadow-card);
+}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.kpi-label{font-size:var(--text-sm);font-weight:600;color:var(--on-surface-variant)}
+.kpi-icon{width:30px;height:30px;border-radius:8px;background:var(--surface-low);color:var(--primary);display:flex;align-items:center;justify-content:center}
+.kpi-value{font-size:var(--text-4xl);font-weight:700;letter-spacing:-.025em;line-height:1;font-variant-numeric:tabular-nums}
+.kpi-hint{font-size:var(--text-xs);color:var(--on-surface-variant)}
+.kpi-progress{height:6px;background:var(--surface-container);border-radius:var(--radius-full);overflow:hidden;margin-top:4px}
+.kpi-progress>span{display:block;height:100%;background:var(--primary);border-radius:var(--radius-full)}
+
+.dashboard-grid{display:grid;grid-template-columns:1fr;gap:var(--space-3);margin-bottom:var(--space-4)}
+.bar-row{margin:10px 0}
+.bar-row:first-child{margin-top:0}
+.bar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:var(--text-sm);margin-bottom:5px}
+.bar-head .bar-label{display:inline-flex;align-items:center;gap:6px}
+.bar-head b{font-variant-numeric:tabular-nums}
+.bar-track{height:8px;background:var(--surface-container);border-radius:var(--radius-full);overflow:hidden}
+.bar-fill{height:100%;border-radius:var(--radius-full);transition:width var(--t-normal)}
+.monthchart{display:flex;align-items:flex-end;gap:6px;height:112px;margin-top:var(--space-3)}
+.month-col{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;min-width:0}
+.month-col .mbar{width:100%;min-height:3px;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,#3b82f6,var(--primary));transition:height var(--t-normal)}
+.month-col .mval{font-size:10px;font-weight:700;color:var(--primary);font-variant-numeric:tabular-nums}
+.month-col .mlbl{font-size:10px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+
+.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.data-table{width:100%;border-collapse:collapse;font-size:var(--text-md)}
+.data-table th{
+  text-align:left;font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.04em;
+  color:var(--on-surface-variant);font-weight:700;padding:8px 10px;
+  border-bottom:1px solid var(--outline-variant);white-space:nowrap;
+}
+.data-table td{padding:10px;border-bottom:1px solid var(--outline-variant);vertical-align:middle}
+.data-table tbody tr:last-child td{border-bottom:0}
+.data-table tbody tr:hover{background:var(--surface-low)}
+.data-table .num{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+
+/* ========================================================================== */
+/* Pills                                                                      */
+/* ========================================================================== */
+.pill{
+  display:inline-flex;align-items:center;gap:4px;border:1px solid transparent;
+  border-radius:var(--radius-full);padding:3px 9px;
+  font-size:var(--text-xs);font-weight:700;white-space:nowrap;
+}
+.pill.vac{color:var(--vac);background:var(--vac-bg);border-color:var(--vac-border)}
+.pill.baja{color:var(--baja);background:var(--baja-bg);border-color:var(--baja-border)}
+.pill.med{color:var(--visita);background:var(--visita-bg);border-color:var(--visita-border)}
+.pill.other{color:var(--permiso);background:var(--permiso-bg);border-color:var(--permiso-border)}
+
+/* ========================================================================== */
+/* Empleados                                                                  */
+/* ========================================================================== */
+.employee-grid{display:grid;grid-template-columns:1fr;gap:var(--space-3)}
+.employee-card{display:flex;flex-direction:column;gap:10px}
+.employee-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.count-badge{
+  display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:24px;
+  padding:0 8px;border-radius:var(--radius-full);background:var(--surface-container);
+  color:var(--on-surface-variant);font-size:var(--text-xs);font-weight:700;white-space:nowrap;
+}
+.balance-line{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 10px;border-radius:10px;background:var(--surface-low);font-size:var(--text-sm);
+}
+.balance-line b{font-size:var(--text-lg);color:var(--primary);font-variant-numeric:tabular-nums}
+.mini-breakdown{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:var(--text-sm);color:var(--on-surface-variant)}
+.mini-breakdown span{white-space:nowrap}
+.employee-card .btn-block{margin-top:auto}
+
+/* ========================================================================== */
+/* Barra de búsqueda y filtros                                                */
+/* ========================================================================== */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3)}
+.search-field{position:relative;flex:1;min-width:180px;display:flex;align-items:center}
+.search-field iconify-icon{position:absolute;left:12px;color:var(--outline);pointer-events:none}
+.search-field input{padding-left:38px}
+.toolbar select{width:auto;min-width:130px}
+.filter-empty{display:none;text-align:center;padding:var(--space-5);color:var(--on-surface-variant);font-size:var(--text-md)}
+
+/* ========================================================================== */
+/* Calendario                                                                 */
+/* ========================================================================== */
+.calendar-layout{display:grid;grid-template-columns:1fr;gap:var(--space-3)}
+.calendar-card{padding:var(--space-3)}
+.monthbar{display:flex;align-items:center;justify-content:space-between;gap:var(--space-2);margin-bottom:var(--space-3)}
+.monthbar strong{font-size:var(--text-xl);font-weight:600;letter-spacing:-.01em}
+.calendar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.calendar>*{min-width:0}
+.dayname{text-align:center;font-size:10px;font-weight:700;color:var(--on-surface-variant);padding:4px 0;text-transform:uppercase;letter-spacing:.03em}
+.day{
+  min-height:56px;background:var(--surface-lowest);border:1px solid var(--outline-variant);
+  border-radius:8px;padding:4px;position:relative;cursor:pointer;overflow:hidden;
+  transition:background var(--t-fast),border-color var(--t-fast),box-shadow var(--t-fast);
+}
+.day:hover{background:var(--surface-low)}
+.day.dim{opacity:.3;pointer-events:none}
+.day.today{border-color:var(--primary);box-shadow:inset 0 0 0 1px var(--primary)}
+.day.selected{background:var(--primary-container);border-color:var(--primary)}
+.day.guardday{background:var(--guardia-bg);border-color:var(--guardia-border)}
+.day-num{position:absolute;top:4px;left:6px;font-size:var(--text-sm);font-weight:700;color:var(--on-surface);font-variant-numeric:tabular-nums}
+.day.today .day-num{color:var(--primary)}
+.day.selected .day-num{color:var(--on-primary-container)}
+.day-count{position:absolute;top:5px;right:6px;font-size:9px;font-weight:700;color:var(--primary)}
+.day-dots{position:absolute;left:5px;bottom:5px;right:5px;display:flex;flex-wrap:wrap;gap:2px}
+.day-dots .empdot{width:6px;height:6px;flex:0 0 6px}
+.guardtag{
+  position:absolute;right:4px;bottom:4px;display:inline-block;
+  background:var(--guardia);color:#fff;border-radius:var(--radius-full);
+  padding:1px 5px;font-size:7px;font-weight:700;letter-spacing:.03em;line-height:1.4;
+}
+.day.guardday .day-dots{bottom:16px;right:5px}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:var(--space-3);font-size:var(--text-xs);color:var(--on-surface-variant)}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend .guard-swatch{width:12px;height:12px;border-radius:3px;background:var(--guardia-bg);border:1px solid var(--guardia-border)}
+.day-panel{display:flex;flex-direction:column;gap:var(--space-3)}
+.daydetail .modal-head{margin-bottom:var(--space-2)}
+.guardinfo{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:var(--radius-full);background:var(--guardia-bg);border:1px solid var(--guardia-border);color:var(--guardia);font-size:var(--text-xs);font-weight:700}
+
+/* ========================================================================== */
+/* Registros                                                                  */
+/* ========================================================================== */
+.record-table{display:flex;flex-direction:column}
+.record-head,.record-row{
+  display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,.9fr) minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1.4fr) auto;
+  gap:var(--space-3);align-items:center;padding:10px 12px;
+}
+.record-head{
+  font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.04em;font-weight:700;
+  color:var(--on-surface-variant);background:var(--surface-low);
+  border-bottom:1px solid var(--outline-variant);border-radius:10px 10px 0 0;
+}
+.record-row{border-bottom:1px solid var(--outline-variant);font-size:var(--text-md)}
+.record-row:last-child{border-bottom:0}
+.record-row:hover{background:var(--surface-low)}
+.rc-emp{display:flex;align-items:center;gap:8px;min-width:0}
+.rc-emp b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-muted{color:var(--on-surface-variant);font-size:var(--text-sm)}
+.rc-num{font-variant-numeric:tabular-nums;font-weight:600}
+.rc-actions{display:flex;gap:4px;justify-content:flex-end}
+.rc-notes{font-size:var(--text-sm);color:var(--on-surface-variant);overflow:hidden;text-overflow:ellipsis}
+
+/* ========================================================================== */
+/* Ajustes                                                                    */
+/* ========================================================================== */
+.settings-grid{display:grid;grid-template-columns:1fr;gap:var(--space-3)}
+.settings-grid .card{height:100%}
+.settings-wide{grid-column:1/-1}
+
+/* ========================================================================== */
+/* Modales                                                                    */
+/* ========================================================================== */
+.modal{
+  position:fixed;inset:0;z-index:var(--z-modal);display:none;
+  align-items:flex-end;justify-content:center;background:var(--backdrop);
+}
+.modal.show{display:flex}
+.sheet{
+  width:100%;max-width:640px;max-height:92vh;overflow:auto;
+  background:var(--surface);border-radius:var(--radius-2xl) var(--radius-2xl) 0 0;
+  padding:var(--space-4) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom));
+  box-shadow:var(--shadow-modal);animation:sheet-up var(--t-normal);
+}
+@keyframes sheet-up{from{transform:translateY(18px);opacity:.5}to{transform:none;opacity:1}}
+@keyframes modal-in{from{transform:scale(.98);opacity:.5}to{transform:none;opacity:1}}
+.modal-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-2);
+  margin-bottom:var(--space-3);padding-bottom:var(--space-2);
+  border-bottom:1px solid var(--outline-variant);
+}
+.modal-head h2{font-size:var(--text-xl);font-weight:700;letter-spacing:-.015em}
+.modal-head .small{margin-top:2px}
+body.modal-open{overflow:hidden}
+@media(min-width:600px){
+  .modal{align-items:center;padding:var(--space-5)}
+  .sheet{border-radius:var(--radius-2xl);animation:modal-in var(--t-normal)}
+}
+
+/* ========================================================================== */
+/* Toast                                                                      */
+/* ========================================================================== */
+.toast{
+  position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));z-index:var(--z-toast);
+  transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;
+  max-width:calc(100% - 32px);padding:10px 16px;border-radius:10px;
+  background:#0b1c30;color:#f8f9ff;font-size:var(--text-sm);text-align:center;
+  box-shadow:var(--shadow-md);transition:opacity var(--t-fast),transform var(--t-fast);
+}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+/* ========================================================================== */
+/* Informe                                                                    */
+/* ========================================================================== */
+.report-screen{
+  display:none;position:fixed;inset:0;z-index:var(--z-modal);overflow:auto;
+  background:var(--surface);
+  padding:calc(16px + env(safe-area-inset-top)) var(--space-4) calc(24px + env(safe-area-inset-bottom));
+}
+.report-screen.show{display:block}
+.report-toolbar{
+  max-width:900px;margin:0 auto var(--space-3);display:flex;gap:var(--space-2);
+  flex-wrap:wrap;position:sticky;top:0;background:var(--surface);padding:4px 0;z-index:2;
+}
+.report-toolbar .btn{flex:1}
+.report-paper{
+  max-width:900px;margin:0 auto;background:#fff;color:var(--on-surface);
+  border:1px solid var(--outline-variant);border-radius:var(--radius-lg);
+  padding:var(--space-6);box-shadow:var(--shadow-card);
+}
+.report-paper h1{font-size:var(--text-3xl);font-weight:700;letter-spacing:-.02em;margin-bottom:var(--space-2)}
+.report-paper .table-wrap{margin-top:var(--space-2)}
+.report-paper table{width:100%;min-width:560px;border-collapse:collapse;font-size:var(--text-sm);margin-top:var(--space-2)}
+.report-paper th,.report-paper td{border-bottom:1px solid var(--outline-variant);padding:8px 6px;text-align:left;vertical-align:top}
+.report-paper th{background:var(--surface-low);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.04em}
+.report-group{margin-top:var(--space-5)}
+.report-group h3{font-size:var(--text-lg);border-bottom:2px solid var(--outline-variant);padding-bottom:6px;margin-bottom:var(--space-2)}
+.image-pages{max-width:900px;margin:var(--space-3) auto}
+.image-page{display:block;width:100%;height:auto;margin:0 auto var(--space-4);border:1px solid var(--outline-variant);border-radius:10px;background:#fff;box-shadow:var(--shadow-card);user-select:none;-webkit-user-select:none}
+.image-help{max-width:900px;margin:0 auto var(--space-3);padding:12px 14px;background:var(--surface-low);color:var(--primary);border-radius:12px;font-size:var(--text-sm)}
+.check-list{display:flex;flex-direction:column;gap:2px;max-height:200px;overflow:auto;border:1px solid var(--outline-variant);border-radius:10px;padding:6px;background:var(--surface-lowest)}
+.check-list label{display:flex;align-items:center;gap:8px;margin:0;padding:6px 8px;border-radius:8px;font-size:var(--text-md);font-weight:500;color:var(--on-surface);cursor:pointer}
+.check-list label:hover{background:var(--surface-low)}
+
+/* ========================================================================== */
+/* Responsive                                                                 */
+/* ========================================================================== */
+@media(min-width:600px){
+  .employee-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(min-width:768px){
+  :root{--header-h:72px}
+  body{padding-bottom:0}
+  .header-inner{padding:0 var(--space-6);gap:var(--space-4)}
+  .brand h1{font-size:var(--text-xl)}
+  #nav{
+    position:static;flex:1;height:100%;justify-content:center;align-items:stretch;
+    background:none;border:0;border-top:0;box-shadow:none;padding:0;gap:2px;
+  }
+  #nav button{
+    flex:0 0 auto;flex-direction:row;gap:7px;min-height:0;padding:0 var(--space-3);
+    border-bottom:2px solid transparent;border-radius:0;
+    font-size:var(--text-md);font-weight:600;
+  }
+  #nav button.active{background:transparent;color:var(--primary);border-bottom-color:var(--primary)}
+  #nav button:hover{background:var(--surface-low)}
+  #nav button iconify-icon{width:18px}
+  .app-main{padding:calc(var(--header-h) + 24px) var(--space-6) var(--space-8)}
+  .card{padding:var(--space-5)}
+  .toast{bottom:24px}
+  .record-row,.record-head{gap:var(--space-2)}
+}
+@media(min-width:900px){
+  .dashboard-grid{grid-template-columns:1fr 1fr}
+  .settings-grid{grid-template-columns:1fr 1fr;align-items:start}
+  .calendar-layout{grid-template-columns:minmax(0,2fr) minmax(320px,1fr);align-items:start}
+  .day-panel{position:sticky;top:calc(var(--header-h) + 20px)}
+}
+@media(min-width:1024px){
+  .employee-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .day{min-height:68px}
+  .day-num{font-size:var(--text-md)}
+}
+@media(max-width:767px){
+  .brand-sub{display:none}
+  .local-chip{display:none}
+  .record-head{display:none}
+  .record-row{
+    display:block;border:1px solid var(--outline-variant);border-radius:var(--radius-lg);
+    background:var(--surface-lowest);box-shadow:var(--shadow-sm);
+    padding:var(--space-3);margin:0 0 var(--space-2);
+  }
+  .record-row:last-child{margin-bottom:0}
+  .record-row .rc-cell{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 0;font-size:var(--text-sm)}
+  .record-row .rc-cell::before{content:attr(data-label);font-weight:600;color:var(--on-surface-variant);flex:0 0 auto}
+  .record-row .rc-emp{justify-content:flex-start}
+  .record-row .rc-actions{justify-content:flex-end;padding-top:var(--space-2)}
+  .record-row .rc-notes{white-space:normal}
+}
+@media(max-width:520px){
+  .btn-text{display:none}
+  .page-title{font-size:var(--text-2xl)}
+  .kpi-value{font-size:var(--text-3xl)}
+  .header-inner{gap:var(--space-2)}
+  .brand h1{font-size:var(--text-lg)}
+  .calendar{gap:3px}
+  .day{min-height:52px;padding:3px}
+  .day-name{font-size:9px}
+  .guardtag{font-size:6px;padding:1px 3px;right:3px;bottom:3px}
+  .day.guardday .day-dots{bottom:14px}
+  .report-paper{padding:var(--space-4)}
+}
+@media(max-width:360px){
+  #nav button span{font-size:9px}
+  .brand h1{font-size:var(--text-md)}
+}
+
+/* ========================================================================== */
+/* Accesibilidad y motion                                                     */
+/* ========================================================================== */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
+/* ========================================================================== */
+/* Impresión                                                                  */
+/* ========================================================================== */
+@media print{
+  body{background:#fff;padding:0}
+  body>*:not(#reportScreen){display:none!important}
+  #reportScreen{display:block!important;position:static;overflow:visible;padding:0;background:#fff}
+  #reportScreen .report-toolbar{display:none!important}
+  .report-paper{max-width:none;border:0;border-radius:0;box-shadow:none;padding:0}
+  .report-paper h1{font-size:20px}
+  .report-paper .table-wrap{overflow:visible}
+  .report-paper table{min-width:0;font-size:10px;page-break-inside:auto}
+  .report-paper tr{page-break-inside:avoid;page-break-after:auto}
+  .report-group{page-break-inside:avoid}
+}
+
 </style>
+<title>Control de ausencias</title>
 </head>
 <body>
-<header class="text-white"><div class="row flex items-center justify-between gap-3" style="align-items:center"><div class="min-w-0"><h1 class="text-xl font-bold tracking-tight">Control de ausencias</h1><p class="text-xs opacity-80">Gestión local de vacaciones, bajas y visitas médicas</p></div><button class="secondary" style="background:#fff;color:var(--navy);white-space:nowrap;padding:9px 11px" onclick="saveCSVBackup()">Guardar CSV</button></div></header>
-<main id="app" class="mx-auto w-full"></main>
-<nav id="nav">
-<button data-tab="inicio" class="active"><iconify-icon icon="solar:home-2-bold-duotone" width="22"></iconify-icon>Inicio</button>
-<button data-tab="empleados"><iconify-icon icon="solar:users-group-rounded-bold-duotone" width="22"></iconify-icon>Empleados</button>
-<button data-tab="calendario"><iconify-icon icon="solar:calendar-bold-duotone" width="22"></iconify-icon>Calendario</button>
-<button data-tab="registros"><iconify-icon icon="solar:clipboard-list-bold-duotone" width="22"></iconify-icon>Registros</button>
-<button data-tab="ajustes"><iconify-icon icon="solar:settings-bold-duotone" width="22"></iconify-icon>Ajustes</button>
+<header class="app-header">
+<div class="header-inner">
+<div class="brand">
+<div class="brand-mark"><iconify-icon icon="solar:clipboard-list-linear" width="22"></iconify-icon></div>
+<div class="brand-text">
+<div class="brand-title-row">
+<h1>Control de ausencias</h1>
+<span class="local-chip">100% local · Olvera</span>
+</div>
+<p class="brand-sub">Gestión local de vacaciones, bajas y visitas médicas</p>
+</div>
+</div>
+<nav id="nav" aria-label="Secciones">
+<button type="button" data-tab="inicio" class="active"><iconify-icon icon="solar:home-2-linear" width="20"></iconify-icon><span>Inicio</span></button>
+<button type="button" data-tab="empleados"><iconify-icon icon="solar:users-group-rounded-linear" width="20"></iconify-icon><span>Empleados</span></button>
+<button type="button" data-tab="calendario"><iconify-icon icon="solar:calendar-linear" width="20"></iconify-icon><span>Calendario</span></button>
+<button type="button" data-tab="registros"><iconify-icon icon="solar:clipboard-list-linear" width="20"></iconify-icon><span>Registros</span></button>
+<button type="button" data-tab="ajustes"><iconify-icon icon="solar:settings-linear" width="20"></iconify-icon><span>Ajustes</span></button>
 </nav>
-<div class="modal" id="modal"><div class="sheet" id="sheet"></div></div><div id="reportScreen" class="report-screen"></div><div class="toast" id="toast"></div>
+<div class="header-actions">
+<button type="button" class="btn btn-secondary" onclick="app.saveCSVBackup()" aria-label="Guardar CSV"><iconify-icon icon="solar:file-download-linear" width="18"></iconify-icon><span class="btn-text">Guardar CSV</span></button>
+</div>
+</div>
+</header>
+<main id="app" class="app-main"></main>
+<div class="modal" id="modal"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div><div id="reportScreen" class="report-screen"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
-const DB='ausencias_local_v1';
-let state={employees:[],records:[],settings:{annualDays:22,workweek:'monfri',holidays:[],year:new Date().getFullYear(),guards:{enabled:true,everyDays:21,durationDays:7,anchor:'2026-11-16'}}};
-let tab='inicio', calDate=new Date(), selectedDate=null, lastSavedSnapshot=null;
-const $=s=>document.querySelector(s);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=d=>new Date(d+'T12:00:00').toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'});
-const iso=d=>{let x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
-selectedDate=iso(new Date());
-function dataSnapshot(){let x=JSON.parse(JSON.stringify(state));if(x.settings){delete x.settings.undoStack;delete x.settings.changeHistory;}return x}
-function save(label='Cambio guardado'){try{let current=dataSnapshot(),previous=lastSavedSnapshot;if(previous&&JSON.stringify(previous)!==JSON.stringify(current)){state.settings.undoStack=state.settings.undoStack||[];state.settings.changeHistory=state.settings.changeHistory||[];state.settings.undoStack.push(previous);if(state.settings.undoStack.length>10)state.settings.undoStack.shift();state.settings.changeHistory.unshift({label,at:new Date().toISOString()});state.settings.changeHistory=state.settings.changeHistory.slice(0,20);current=dataSnapshot();}localStorage.setItem(DB,JSON.stringify(state));lastSavedSnapshot=current;}catch(e){toast('No se pudo guardar en el almacenamiento del iPhone. Exporta una copia CSV.');}} 
-function undoLastChange(){let stack=state.settings.undoStack||[];if(!stack.length){toast('No hay cambios que deshacer');return}if(!confirm('Se restaurará el estado inmediatamente anterior al último cambio. ¿Continuar?'))return;let restored=stack.pop(),history=state.settings.changeHistory||[];state=restored;state.settings.undoStack=stack;state.settings.changeHistory=[{label:'Deshacer último cambio',at:new Date().toISOString()},...history].slice(0,20);localStorage.setItem(DB,JSON.stringify(state));lastSavedSnapshot=dataSnapshot();render();toast('Último cambio deshecho')}
-function load(){try{const x=JSON.parse(localStorage.getItem(DB));if(x&&Array.isArray(x.employees)&&Array.isArray(x.records)){state=x;state.settings=state.settings||{};state.settings.annualDays??=22;state.settings.holidays=[...new Set([...defaultHolidays(),...(state.settings.holidays||[])])];state.settings.year??=new Date().getFullYear();state.employees.forEach((e,i)=>e.color??=['#2d6cdf','#16a085','#d97706','#8e44ad','#c0392b','#0f766e','#db2777','#64748b'][i%8]);let g=state.settings.guards||{};if(g.everyDays==null){g.everyDays=Number(g.every||3)*7;g.durationDays=Number(g.durationWeeks||1)*7;}state.settings.guards={enabled:true,everyDays:21,durationDays:7,anchor:'2026-11-16',...g};}else{state.settings.holidays=defaultHolidays();}}catch(e){state.settings.holidays=defaultHolidays();}state.settings.undoStack??=[];state.settings.changeHistory??=[];lastSavedSnapshot=dataSnapshot();}
-function defaultHolidays(){return ['2026-01-01','2026-01-06','2026-02-28','2026-04-02','2026-04-03','2026-04-13','2026-05-01','2026-08-15','2026-08-31','2026-10-12','2026-11-02','2026-12-07','2026-12-08','2026-12-25','2027-01-01','2027-01-06','2027-03-01','2027-03-25','2027-03-26','2027-04-05','2027-05-01','2027-08-16','2027-08-30','2027-10-12','2027-11-01','2027-12-06','2027-12-08','2027-12-25'];}
-function toast(t){let el=$('#toast');el.textContent=t;el.style.display='block';setTimeout(()=>el.style.display='none',2200)}
-function emp(id){return state.employees.find(e=>e.id===id)}
-function workingDays(start,end){let n=0,d=new Date(start+'T12:00:00'),last=new Date(end+'T12:00:00');while(d<=last){let wd=d.getDay(),key=iso(d);if(wd!==0&&wd!==6&&!state.settings.holidays.includes(key))n++;d.setDate(d.getDate()+1)}return n}
-function recordDays(r){if(r.unit==='hours')return 0;if(r.type==='vacaciones')return r.halfDay?0.5:workingDays(r.start,r.end);return 0}
-function recordDaysInYear(r,year){if(r.type!=='vacaciones')return 0;let ys=`${year}-01-01`,ye=`${year}-12-31`;if(r.end<ys||r.start>ye)return 0;if(r.halfDay)return r.start>=ys&&r.start<=ye?0.5:0;return workingDays(r.start>ys?r.start:ys,r.end<ye?r.end:ye)}
-function usedVac(id,year){return state.records.filter(r=>r.employeeId===id&&r.type==='vacaciones').reduce((a,r)=>a+recordDaysInYear(r,year),0)}
-function balance(e,year){return Number(e.entitlement??state.settings.annualDays)+Number(e.carry||0)-usedVac(e.id,year)}
-function typeLabel(t){return ({vacaciones:'Vacaciones',baja:'Baja médica',medica:'Visita médica',otro:'Otro permiso'})[t]||t}
-function pill(t){return `<span class="pill ${t==='vacaciones'?'vac':t==='baja'?'baja':t==='medica'?'med':'other'}">${typeLabel(t)}</span>`}
-function render(){
- $('#nav').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
- const app=$('#app'); if(tab==='inicio')app.innerHTML=home();if(tab==='empleados')app.innerHTML=employeesView();if(tab==='calendario')app.innerHTML=calendarView();if(tab==='registros')app.innerHTML=recordsView();if(tab==='ajustes')app.innerHTML=settingsView();
+(function(){
+'use strict';
+const __mods = {};
+
+__mods["js/dates.js"] = (function(){
+const DEFAULT_HOLIDAYS = [
+  '2026-01-01','2026-01-06','2026-02-28','2026-04-02','2026-04-03','2026-04-13','2026-05-01','2026-08-15','2026-08-31','2026-10-12','2026-11-02','2026-12-07','2026-12-08','2026-12-25',
+  '2027-01-01','2027-01-06','2027-03-01','2027-03-25','2027-03-26','2027-04-05','2027-05-01','2027-08-16','2027-08-30','2027-10-12','2027-11-01','2027-12-06','2027-12-08','2027-12-25'
+];
+
+const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DAYS = 86400000;
+
+function pad(n){ return String(n).padStart(2, '0'); }
+
+function iso(value){
+  if (typeof value === 'string' && ISO_RE.test(value)) return value;
+  const d = value instanceof Date ? value : new Date(value);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
-function home(){
- const storedYear=Number(state.settings.year||new Date().getFullYear()),y=Math.min(2100,Math.max(2026,storedYear)),today=iso(new Date());
- const yearRecords=state.records.filter(r=>r.start.slice(0,4)<=String(y)&&r.end.slice(0,4)>=String(y));
- let upcoming=yearRecords.filter(r=>r.start>=today).sort((a,b)=>a.start.localeCompare(b.start)).slice(0,5);
- return `<div class="row wrap"><h2>Resumen por empleado</h2><select class="yearpick" aria-label="Año del resumen" onchange="setYear(this.value)">${Array.from({length:75},(_,i)=>2026+i).map(yr=>`<option value="${yr}" ${yr===y?'selected':''}>${yr}</option>`).join('')}</select></div>
- <div class="card">${state.employees.length?state.employees.map(e=>{let rs=yearRecords.filter(r=>r.employeeId===e.id).sort((a,b)=>a.start.localeCompare(b.start));let counts={vacaciones:rs.filter(r=>r.type==='vacaciones').length,baja:rs.filter(r=>r.type==='baja').length,medica:rs.filter(r=>r.type==='medica').length,otro:rs.filter(r=>r.type==='otro').length};return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e.color||'#2d6cdf')}"></i><b>${esc(e.name)}</b></span><b>${rs.length} ausencias</b></div><div class="small muted">${counts.vacaciones} vacaciones · ${counts.baja} bajas · ${counts.medica} visitas médicas · ${counts.otro} otros permisos</div><div class="small" style="margin-top:5px">${rs.map(r=>`${pill(r.type)} ${fmt(r.start)}${r.end!==r.start?' – '+fmt(r.end):''}${r.type==='vacaciones'?' · '+(r.halfDay?'medio día':recordDays(r)+' días'):''}`).join(' &nbsp; ')||'Sin ausencias este año'}</div></div>`}).join(''):'<div class="empty">Añade empleados para ver el resumen.</div>'}</div>
- <div class="row"><h2>Próximas ausencias</h2><button class="secondary" onclick="go('registros')">Ver todas</button></div><div class="card">${upcoming.length?upcoming.map(r=>`<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(emp(r.employeeId)?.color||'#2d6cdf')}"></i><b>${esc(emp(r.employeeId)?.name||'Empleado eliminado')}</b></span>${pill(r.type)}</div><div class="small muted">${fmt(r.start)} – ${fmt(r.end)}${r.type==='vacaciones'?' · '+(r.halfDay?'medio día':recordDays(r)+' días'):''}</div></div>`).join(''):'<div class="empty">No hay ausencias futuras en este año.</div>'}</div><button style="width:100%" onclick="openRecord()">＋ Añadir ausencia</button>`;
+
+function fmt(dateStr){
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
-function setYear(y){let n=Number(y);if(!Number.isInteger(n)||n<2026||n>2100){toast('Selecciona un año entre 2026 y 2100');return}state.settings.year=n;save('Año de consulta cambiado');render()}
-function employeesView(){return `<div class="row"><h2>Empleados</h2><button onclick="openEmployee()">＋ Añadir</button></div>
- ${state.employees.length?state.employees.map(e=>{let rs=state.records.filter(r=>r.employeeId===e.id);return `<div class="card"><div class="row"><div class="empmark"><i class="empdot" style="background:${esc(e.color||'#2d6cdf')}"></i><div><b>${esc(e.name)}</b><div class="small muted">${esc(e.department||'Sin departamento')}</div></div></div><div style="text-align:right"><b>${rs.length}</b><div class="small muted">ausencias</div></div></div><div class="small muted" style="margin-top:8px">${rs.filter(r=>r.type==='vacaciones').length} vacaciones · ${rs.filter(r=>r.type==='baja').length} bajas · ${rs.filter(r=>r.type==='medica').length} visitas médicas · ${rs.filter(r=>r.type==='otro').length} otros permisos</div><div class="row" style="margin-top:10px;justify-content:flex-end"><button class="secondary" onclick="openEmployee('${e.id}')">Ver empleado y ausencias</button></div></div>`}).join(''):'<div class="card empty">Añade el primer empleado para empezar.</div>'}`;}
-function isGuardDate(dateStr){const g=state.settings.guards||{};if(g.enabled===false||!g.anchor)return false;const date=new Date(dateStr+'T12:00:00'),anchor=new Date(g.anchor+'T12:00:00');const diff=Math.round((date-anchor)/86400000),every=Math.max(1,Number(g.everyDays||21)),duration=Math.max(1,Number(g.durationDays||7));return diff>=0&&(diff%every)<duration;}
-function daySummary(date){let rs=state.records.filter(r=>r.start<=date&&r.end>=date);let guard=isGuardDate(date);return `<div class="card daydetail"><div class="row"><h2>Resumen del ${fmt(date)}</h2><button class="secondary" onclick="openRecordForDate('${date}')">＋ Añadir</button></div>${rs.length?rs.map(r=>`<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(emp(r.employeeId)?.color||'#2d6cdf')}"></i><b>${esc(emp(r.employeeId)?.name||'Empleado eliminado')}</b></span>${pill(r.type)}</div><div class="small muted">${fmt(r.start)} – ${fmt(r.end)}${r.type==='vacaciones'?' · '+(r.halfDay?'medio día':recordDays(r)+' días laborables'):''}</div>${r.notes?`<div class="small">${esc(r.notes)}</div>`:''}<div class="row" style="justify-content:flex-end"><button class="ghost" onclick="openRecord('${r.id}')">Editar</button></div></div>`).join(''):'<div class="empty">No hay ausencias registradas para este día.</div>'}${guard?'<div class="guardtag">GUARDIA INFORMATIVA</div>':''}</div>`}
-function calendarView(){let y=calDate.getFullYear(),m=calDate.getMonth(),first=new Date(y,m,1),offset=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();let cells='';['L','M','X','J','V','S','D'].forEach(x=>cells+=`<div class="dayname">${x}</div>`);for(let i=0;i<offset;i++)cells+=`<div class="day dim"></div>`;let guardDates=[];for(let d=1;d<=days;d++){let date=iso(new Date(y,m,d)),rs=state.records.filter(r=>r.start<=date&&r.end>=date),guard=isGuardDate(date),today=date===iso(new Date());if(guard)guardDates.push(date);let dots=rs.slice(0,4).map(r=>`<i class="empdot" style="background:${esc(emp(r.employeeId)?.color||'#2d6cdf')};width:7px;height:7px;margin:2px"></i>`).join('');cells+=`<div class="day ${guard?'guardday':''} ${today?'today':''} ${selectedDate===date?'selected':''}" onclick="selectDay('${date}')"><b>${d}</b>${rs.length?`<span class="count">${rs.length} aus.</span><div>${dots}</div>`:''}${guard?`<span class="guardtag">GUARDIA</span>`:''}</div>`}let runs=[];guardDates.forEach(ds=>{let last=runs[runs.length-1];if(last&&new Date(ds+'T12:00:00')-new Date(last.end+'T12:00:00')===86400000)last.end=ds;else runs.push({start:ds,end:ds})});return `<h2>Calendario mensual</h2><div class="card"><div class="monthbar"><button class="secondary" onclick="changeMonth(-1)">‹</button><strong>${new Date(y,m,1).toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</strong><button class="secondary" onclick="changeMonth(1)">›</button></div><div class="calendar">${cells}</div><div class="small muted" style="margin-top:10px">Puntos de color: empleados con ausencias · Rojo: guardias informativas. Pulsa un día para ver su resumen.</div></div>${daySummary(selectedDate.slice(0,7)===`${y}-${String(m+1).padStart(2,'0')}`?selectedDate:iso(new Date(y,m,1)))}<h2>Guardias informativas del mes</h2><div class="card">${runs.map(x=>`<div class="item"><b>${fmt(x.start)}${x.start!==x.end?' – '+fmt(x.end):''}</b></div>`).join('')||'<div class="empty">No hay días de guardia este mes.</div>'}</div>`;}
-function selectDay(d){selectedDate=d;render()}function openRecordForDate(d){openRecord();let start=$('#sheet input[name="start"]'),end=$('#sheet input[name="end"]');if(start&&end){start.value=d;end.value=d}}
-function recordsView(){let rs=[...state.records].sort((a,b)=>b.start.localeCompare(a.start));return `<div class="row"><h2>Registros</h2><button onclick="openRecord()">＋ Añadir</button></div>
- <div class="card">${rs.length?rs.map(r=>`<div class="item"><div class="row"><b>${esc(emp(r.employeeId)?.name||'Empleado eliminado')}</b>${pill(r.type)}</div><div class="small muted">${fmt(r.start)} – ${fmt(r.end)}${r.type==='vacaciones'?' · '+(r.halfDay?'medio día':recordDays(r)+' días'):r.type==='medica'?' · '+esc(r.duration||'') :''}</div>${r.notes?`<div class="small">${esc(r.notes)}</div>`:''}<div class="row" style="justify-content:flex-end"><button class="ghost" onclick="openRecord('${r.id}')">Editar</button><button class="ghost" onclick="deleteRecord('${r.id}')">Eliminar</button></div></div>`).join(''):'<div class="empty">No hay registros todavía.</div>'}</div>`;
+
+function monthLabel(year, month){
+  const label = new Date(year, month, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  return label.charAt(0).toUpperCase() + label.slice(1);
 }
-function settingsView(){let g=state.settings.guards||{enabled:true,everyDays:21,durationDays:7,anchor:'2026-11-16'};return `<h2>Ajustes</h2><div class="card"><h3>Guardias informativas</h3><p class="small muted">Se muestran en rojo en el calendario. No se asignan a empleados y no modifican vacaciones, permisos ni ausencias.</p><label>Mostrar guardias</label><select id="guardsEnabled"><option value="yes" ${g.enabled!==false?'selected':''}>Sí</option><option value="no" ${g.enabled===false?'selected':''}>No</option></select><label>Frecuencia (cada cuántos días)</label><input id="guardEvery" type="number" min="1" max="366" value="${g.everyDays||21}"><label>Duración (días)</label><input id="guardDuration" type="number" min="1" max="31" value="${g.durationDays||7}"><label>Fecha del primer día de guardia</label><input id="guardAnchor" type="date" value="${g.anchor||'2026-11-16'}"><p class="small muted">Configuración inicial equivalente: frecuencia de 21 días y duración de 7 días, comenzando el 16/11/2026.</p><button style="width:100%;margin-top:12px" onclick="saveGuardSettings()">Guardar guardias</button></div><div class="card"><h3>Vacaciones por defecto</h3><label>Días laborables anuales</label><input id="annual" type="number" min="0" max="365" value="${state.settings.annualDays}"><label>Festivos de Olvera (uno por línea, formato AAAA-MM-DD)</label><textarea id="holidays" rows="5" placeholder="2026-01-01">${state.settings.holidays.join('\n')}</textarea><p class="small muted">Incluye los festivos oficiales de Olvera de 2026 y 2027. Puedes añadir o quitar fechas manualmente para otros años.</p><button style="width:100%;margin-top:12px" onclick="saveSettings()">Guardar ajustes</button></div>
- <div class="card"><h3>Guardar y cargar datos CSV</h3><p class="small muted">Pulsa «Guardar CSV» en la cabecera después de realizar cambios. En iPhone se abrirá la hoja de compartir para elegir «Guardar en Archivos». El CSV contiene empleados, ausencias y ajustes para poder recuperar toda la aplicación.</p><button style="width:100%;margin-bottom:8px" onclick="saveCSVBackup()">Guardar copia CSV en Archivos</button><label>Cargar una copia CSV desde Archivos</label><input type="file" id="stateCSVFile" accept=".csv,text/csv"><button class="secondary" style="width:100%;margin-top:8px" onclick="loadCSVBackup()">Cargar / restaurar CSV</button><p class="small muted">Al cargar una copia se sustituirán los datos actuales. La app también conserva una copia automática en el almacenamiento local del navegador de este iPhone y la carga al abrirse.</p><hr style="border:0;border-top:1px solid var(--line);margin:14px 0"><h3>Copia JSON adicional</h3><button class="secondary" style="width:100%;margin-bottom:8px" onclick="backup()">Exportar copia JSON</button><label>Restaurar copia JSON</label><input type="file" id="restoreFile" accept=".json,application/json"><button class="secondary" style="width:100%;margin-top:8px" onclick="restore()">Restaurar datos JSON</button></div>
- <div class="card"><h3>Exportar informes</h3><button style="width:100%;margin-bottom:8px" onclick="exportCSV()">Exportar registros a Excel (CSV)</button><button class="secondary" style="width:100%" onclick="openReportOptions()">Generar informe PDF</button><p class="small muted">Elige uno o varios años y uno o varios empleados. El informe solo incluirá las ausencias; no mostrará saldos ni días disponibles.</p></div>
- <div class="card"><div class="row"><h3>Historial y deshacer</h3><button class="secondary" onclick="undoLastChange()" ${(state.settings.undoStack||[]).length?'':'disabled'}>Deshacer último cambio</button></div><p class="small muted">Se conserva un historial local de los últimos cambios. Puedes revertir el último guardado; se mantienen hasta 10 puntos de recuperación.</p>${(state.settings.changeHistory||[]).length?(state.settings.changeHistory).map(h=>`<div class="item"><b>${esc(h.label)}</b><div class="small muted">${new Date(h.at).toLocaleString('es-ES')}</div></div>`).join(''):'<p class="small muted">Todavía no hay cambios registrados.</p>'}</div>
- <p class="small muted">Los datos se guardan en este navegador y en este iPhone. No se envían a ningún servidor. La eliminación de datos del navegador puede borrarlos; conserva copias externas.</p>`;}
-function saveGuardSettings(){let everyDays=Number($('#guardEvery').value),durationDays=Number($('#guardDuration').value),anchor=$('#guardAnchor').value;if(!Number.isInteger(everyDays)||everyDays<1||everyDays>366||!Number.isInteger(durationDays)||durationDays<1||durationDays>31||!anchor){toast('Revisa la frecuencia, duración y fecha de inicio');return}state.settings.guards={enabled:$('#guardsEnabled').value==='yes',everyDays,durationDays,anchor};save('Ajustes de guardias modificados');render();toast('Guardias informativas guardadas')}
-function go(t){tab=t;render()}
-function changeMonth(n){calDate.setMonth(calDate.getMonth()+n);render()}
-function modal(content){$('#sheet').innerHTML=content;$('#modal').classList.add('show')}
-function closeModal(){$('#modal').classList.remove('show')}
-$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
-function openEmployee(id=''){let e=emp(id)||{name:'',department:'',entitlement:state.settings.annualDays,carry:0,color:'#2d6cdf'};let rs=id?state.records.filter(r=>r.employeeId===id).sort((a,b)=>b.start.localeCompare(a.start)):[];modal(`<div class="row"><h2>${id?'Empleado':'Nuevo empleado'}</h2><button class="ghost" onclick="closeModal()">Cerrar</button></div>${id?`<div class="card"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e.color||'#2d6cdf')}"></i><b>${esc(e.name)}</b></span><b>${rs.length} ausencias</b></div><h3>Todas las ausencias</h3>${rs.length?rs.map(r=>`<div class="item"><div class="row">${pill(r.type)}<span class="small muted">${fmt(r.start)}${r.end!==r.start?' – '+fmt(r.end):''}</span></div><div class="small">${r.type==='vacaciones'?(r.halfDay?'Medio día':' '+recordDays(r)+' días laborables'):esc(r.duration||r.notes||'')}</div><div class="row" style="justify-content:flex-end"><button class="ghost" onclick="openRecord('${r.id}')">Editar</button></div></div>`).join(''):'<div class="empty">Este empleado todavía no tiene ausencias.</div>'}<button class="secondary" style="width:100%" onclick="openRecordForEmployee('${id}')">＋ Añadir ausencia</button></div>`:''}<form onsubmit="saveEmployee(event,'${id}')"><label>Nombre y apellidos *</label><input name="name" required value="${esc(e.name)}"><label>Departamento / equipo</label><input name="department" value="${esc(e.department)}"><label>Color identificativo</label><input name="color" type="color" value="${esc(e.color||'#2d6cdf')}" style="height:48px;padding:5px"><label>Días laborables de vacaciones al año</label><input name="entitlement" type="number" min="0" step=".5" value="${e.entitlement??state.settings.annualDays}"><label>Días pendientes de años anteriores</label><input name="carry" type="number" step=".5" value="${e.carry||0}"><div class="actions"><button type="submit">Guardar empleado</button>${id?`<button type="button" class="danger" onclick="deleteEmployee('${id}')">Eliminar</button>`:''}</div></form>`);}
-function openRecordForEmployee(id){openRecord();let sel=$('#sheet select[name="employeeId"]');if(sel)sel.value=id}
-function saveEmployee(ev,id){ev.preventDefault();let f=new FormData(ev.target);let old=id?emp(id):null;let v={id:id||crypto.randomUUID(),name:f.get('name').trim(),department:f.get('department').trim(),color:f.get('color')||old?.color||'#2d6cdf',entitlement:Number(f.get('entitlement')),carry:Number(f.get('carry'))};if(id)state.employees=state.employees.map(x=>x.id===id?{...old,...v}:x);else state.employees.push(v);save(id?'Empleado modificado':'Nuevo empleado');closeModal();render();toast('Empleado guardado')}
-function deleteEmployee(id){if(!confirm('¿Eliminar empleado? Sus registros también se eliminarán.'))return;state.employees=state.employees.filter(e=>e.id!==id);state.records=state.records.filter(r=>r.employeeId!==id);save('Empleado eliminado');closeModal();render();toast('Empleado eliminado')}
-function openRecord(id=''){
- if(!state.employees.length){toast('Primero añade un empleado');go('empleados');return}
- let r=state.records.find(x=>x.id===id)||{employeeId:state.employees[0].id,type:'vacaciones',start:iso(new Date()),end:iso(new Date()),duration:'',notes:''};
- modal(`<div class="row"><h2>${id?'Editar registro':'Nueva ausencia'}</h2><button class="ghost" onclick="closeModal()">Cerrar</button></div>
- <form onsubmit="saveRecord(event,'${id}')"><label>Empleado *</label><select name="employeeId">${state.employees.map(e=>`<option value="${e.id}" ${e.id===r.employeeId?'selected':''}>${esc(e.name)}</option>`).join('')}</select>
- <label>Tipo de ausencia</label><select name="type" id="rtype" onchange="toggleRecordFields()">${[['vacaciones','Vacaciones'],['baja','Baja médica'],['medica','Visita médica'],['otro','Otro permiso']].map(([v,l])=>`<option value="${v}" ${r.type===v?'selected':''}>${l}</option>`).join('')}</select>
- <label>Fecha inicial *</label><input name="start" type="date" required value="${r.start}" onchange="previewVacationPart()"><label>Fecha final *</label><input name="end" type="date" required value="${r.end}" onchange="previewVacationPart()">
- <div id="vacationDurationWrap"><label>Duración de vacaciones</label><select name="vacationPart" id="vacationPart" onchange="previewVacationPart()"><option value="full" ${!r.halfDay?'selected':''}>Día(s) completo(s)</option><option value="half" ${r.halfDay?'selected':''}>Medio día (0,5)</option></select><p class="small muted">El medio día se aplica a una única fecha laborable, de lunes a viernes y no festiva.</p></div><div id="durationWrap"><label>Duración de visita médica</label><input name="duration" placeholder="Ej. 2 horas o jornada completa" value="${esc(r.duration||'')}"></div>
- <label>Observaciones (evita incluir diagnósticos médicos)</label><textarea name="notes" rows="2">${esc(r.notes||'')}</textarea>
- <div class="small muted" id="calcPreview"></div><div class="actions"><button type="submit">Guardar registro</button>${id?`<button type="button" class="danger" onclick="deleteRecord('${id}')">Eliminar</button>`:''}</div></form>`);
- toggleRecordFields();
+
+function toDate(dateStr){
+  return new Date(dateStr + 'T12:00:00');
 }
-function toggleRecordFields(){let t=$('#rtype')?.value;let w=$('#durationWrap'),v=$('#vacationDurationWrap');if(w)w.style.display=t==='medica'?'block':'none';if(v)v.style.display=t==='vacaciones'?'block':'none';previewVacationPart()}
-function previewVacationPart(){let part=$('#vacationPart')?.value,start=$('#sheet input[name="start"]')?.value,end=$('#sheet input[name="end"]')?.value,preview=$('#calcPreview');if(!preview)return;if($('#rtype')?.value!=='vacaciones'){preview.textContent='';return}if(part==='half'){preview.textContent='Se descontará medio día (0,5). La fecha inicial y final deben ser iguales y laborables.'}else if(start&&end&&end>=start){preview.textContent='Días laborables que se descontarán: '+workingDays(start,end)}}
-function saveRecord(ev,id){ev.preventDefault();let f=new FormData(ev.target),start=f.get('start'),end=f.get('end');if(end<start){toast('La fecha final no puede ser anterior');return}
- let v={id:id||crypto.randomUUID(),employeeId:f.get('employeeId'),type:f.get('type'),start,end,duration:(f.get('duration')||'').trim(),notes:(f.get('notes')||'').trim()};
- if(v.type==='vacaciones'){v.halfDay=f.get('vacationPart')==='half';if(v.halfDay){if(start!==end){toast('Para medio día, selecciona la misma fecha como inicio y fin');return}if(workingDays(start,end)!==1){toast('El medio día debe ser de lunes a viernes y no festivo');return}v.daysOverride=0.5}else{v.daysOverride=workingDays(start,end);if(v.daysOverride===0){toast('El periodo no contiene días laborables');return}}}else{delete v.halfDay;delete v.daysOverride}
- const overlaps=state.records.filter(x=>x.id!==id&&x.employeeId===v.employeeId&&x.start<=v.end&&x.end>=v.start);
- if(overlaps.length){let details=overlaps.map(x=>`${typeLabel(x.type)} (${fmt(x.start)}${x.end!==x.start?' – '+fmt(x.end):''})`).join('\n');if(!confirm(`Aviso: este empleado ya tiene otra ausencia que coincide con las fechas:\n${details}\n\n¿Quieres guardar de todos modos?`))return}
- if(id)state.records=state.records.map(x=>x.id===id?v:x);else state.records.push(v);save(id?'Registro modificado':'Nueva ausencia');closeModal();render();toast('Registro guardado')}
-function deleteRecord(id){if(!confirm('¿Eliminar este registro?'))return;state.records=state.records.filter(r=>r.id!==id);save('Ausencia eliminada');closeModal();render();toast('Registro eliminado')}
-function saveSettings(){let n=Number($('#annual').value),h=$('#holidays').value.split(/\n/).map(x=>x.trim()).filter(Boolean);if(!Number.isFinite(n)||n<0){toast('Número de días no válido');return}if(h.some(x=>!/^\d{4}-\d{2}-\d{2}$/.test(x))){toast('Revisa el formato de los festivos');return}state.settings.annualDays=n;state.settings.holidays=[...new Set(h)];save('Ajustes generales modificados');render();toast('Ajustes guardados')}
-function download(name,content,type){let blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
-function backup(){download('copia-control-ausencias-'+iso(new Date())+'.json',JSON.stringify(state,null,2),'application/json')}
-function restore(){let file=$('#restoreFile').files[0];if(!file){toast('Selecciona un archivo JSON');return}let rd=new FileReader();rd.onload=()=>{try{let x=JSON.parse(rd.result);if(!Array.isArray(x.employees)||!Array.isArray(x.records)||!x.settings)throw 0;if(!confirm('La restauración sustituirá los datos actuales. ¿Continuar?'))return;state=x;state.settings.guards??={enabled:true,every:3,durationWeeks:1,anchor:'2026-11-16'};save('Copia restaurada');render();toast('Copia restaurada')}catch(e){toast('Archivo de copia no válido')}};rd.readAsText(file)}
-function csvCell(x){return '"'+String(x??'').replace(/"/g,'""')+'"'}
-// CSV de respaldo completo: una fila por empleado, registro y configuración.
-function buildStateCSV(){let rows=[['tipo','id','datos_json']];state.employees.forEach(x=>rows.push(['empleado',x.id,JSON.stringify(x)]));state.records.forEach(x=>rows.push(['registro',x.id,JSON.stringify(x)]));rows.push(['ajustes','',JSON.stringify(state.settings)]);return '\ufeff'+rows.map(r=>r.map(csvCell).join(';')).join('\r\n')}
-async function saveCSVBackup(){const filename='control-ausencias-respaldo.csv',csv=buildStateCSV(),blob=new Blob([csv],{type:'text/csv;charset=utf-8'});try{const file=new File([blob],filename,{type:'text/csv'});if(navigator.canShare&&navigator.canShare({files:[file]})&&navigator.share){await navigator.share({files:[file],title:'Copia de seguridad del control de ausencias'});toast('Elige «Guardar en Archivos» para conservar el CSV');return}}catch(e){if(e&&e.name==='AbortError')return;}download(filename,csv,'text/csv;charset=utf-8');toast('CSV preparado. En iPhone, guárdalo desde Compartir / Archivos')}
-function parseCSV(text){let rows=[],row=[],field='',quoted=false;for(let i=0;i<text.length;i++){let c=text[i];if(quoted){if(c==='"'&&text[i+1]==='"'){field+='"';i++}else if(c==='"')quoted=false;else field+=c}else if(c==='"')quoted=true;else if(c===';'){row.push(field);field=''}else if(c==='\n'){row.push(field);rows.push(row);row=[];field=''}else if(c!=='\r')field+=c}if(field.length||row.length){row.push(field);rows.push(row)}return rows}
-function loadCSVBackup(){let file=$('#stateCSVFile')?.files?.[0];if(!file){toast('Selecciona primero un CSV desde Archivos');return}let rd=new FileReader();rd.onload=()=>{try{let rows=parseCSV(String(rd.result||'').replace(/^\ufeff/,''));if(rows[0]?.[0]!=='tipo'||rows[0]?.[2]!=='datos_json')throw Error('Formato');let employees=[],records=[],settings=null;for(const r of rows.slice(1)){if(!r[0])continue;let value=JSON.parse(r[2]||'null');if(r[0]==='empleado')employees.push(value);else if(r[0]==='registro')records.push(value);else if(r[0]==='ajustes')settings=value}if(!settings||!Array.isArray(employees)||!Array.isArray(records))throw Error('Datos incompletos');if(!confirm('La carga del CSV sustituirá empleados, ausencias y ajustes actuales. ¿Continuar?'))return;state={employees,records,settings};state.settings.holidays=[...new Set([...defaultHolidays(),...(state.settings.holidays||[])])];state.settings.year??=new Date().getFullYear();state.employees.forEach((e,i)=>e.color??=['#2d6cdf','#16a085','#d97706','#8e44ad','#c0392b','#0f766e','#db2777','#64748b'][i%8]);let g=state.settings.guards||{};if(g.everyDays==null){g.everyDays=Number(g.every||3)*7;g.durationDays=Number(g.durationWeeks||1)*7;}state.settings.guards={enabled:true,everyDays:21,durationDays:7,anchor:'2026-11-16',...g};save('Copia CSV restaurada');render();toast('Datos CSV cargados correctamente')}catch(e){toast('No se reconoce el CSV o está incompleto')}};rd.readAsText(file,'UTF-8')}
-function exportCSV(){let rows=[['Empleado','Departamento','Tipo','Fecha inicio','Fecha fin','Días laborables vacaciones','Duración visita','Observaciones']];state.records.forEach(r=>{let e=emp(r.employeeId);rows.push([e?.name,e?.department,typeLabel(r.type),r.start,r.end,r.type==='vacaciones'?recordDays(r):'',r.duration,r.notes])});download('registros-ausencias.csv','\ufeff'+rows.map(row=>row.map(csvCell).join(';')).join('\r\n'),'text/csv;charset=utf-8')}
+
+function isWorkingDayDate(dateStr, holidays = []){
+  const wd = toDate(dateStr).getDay();
+  return wd !== 0 && wd !== 6 && !holidays.includes(dateStr);
+}
+
+function workingDays(start, end, holidays = []){
+  if (!start || !end || end < start) return 0;
+  const holidaySet = holidays instanceof Set ? holidays : new Set(holidays);
+  let n = 0;
+  const d = toDate(start);
+  const last = toDate(end);
+  while (d <= last) {
+    const wd = d.getDay();
+    if (wd !== 0 && wd !== 6 && !holidaySet.has(iso(d))) n++;
+    d.setDate(d.getDate() + 1);
+  }
+  return n;
+}
+
+function recordDays(record, holidays = []){
+  if (!record || record.unit === 'hours') return 0;
+  if (record.type !== 'vacaciones') return 0;
+  if (record.halfDay) return 0.5;
+  return workingDays(record.start, record.end, holidays);
+}
+
+function recordDaysInYear(record, year, holidays = []){
+  if (!record || record.type !== 'vacaciones') return 0;
+  const ys = `${year}-01-01`;
+  const ye = `${year}-12-31`;
+  if (record.end < ys || record.start > ye) return 0;
+  if (record.halfDay) return record.start >= ys && record.start <= ye ? 0.5 : 0;
+  return workingDays(record.start > ys ? record.start : ys, record.end < ye ? record.end : ye, holidays);
+}
+
+function usedVacationDays(records, employeeId, year, holidays = []){
+  return records
+    .filter((r) => r.employeeId === employeeId && r.type === 'vacaciones')
+    .reduce((total, r) => total + recordDaysInYear(r, year, holidays), 0);
+}
+
+function vacationBalance(employee, records, year, holidays = [], defaultAnnual = 22){
+  const entitlement = Number(employee?.entitlement ?? defaultAnnual);
+  const carry = Number(employee?.carry || 0);
+  const used = usedVacationDays(records, employee.id, year, holidays);
+  return entitlement + carry - used;
+}
+
+function recordYearSpan(record){
+  const a = Number(record.start.slice(0, 4));
+  const b = Number(record.end.slice(0, 4));
+  const out = [];
+  for (let y = a; y <= b && out.length < 30; y++) out.push(y);
+  return out;
+}
+
+function daysBetween(a, b){
+  return Math.round((toDate(b) - toDate(a)) / DAYS);
+}
+
+
+
+
+return { get DEFAULT_HOLIDAYS(){ return DEFAULT_HOLIDAYS; }, get iso(){ return iso; }, get fmt(){ return fmt; }, get monthLabel(){ return monthLabel; }, get toDate(){ return toDate; }, get isWorkingDayDate(){ return isWorkingDayDate; }, get workingDays(){ return workingDays; }, get recordDays(){ return recordDays; }, get recordDaysInYear(){ return recordDaysInYear; }, get usedVacationDays(){ return usedVacationDays; }, get vacationBalance(){ return vacationBalance; }, get recordYearSpan(){ return recordYearSpan; }, get daysBetween(){ return daysBetween; } };
+})();
+
+__mods["js/guards.js"] = (function(){
+const { iso, toDate } = __mods["js/dates.js"];
+
+const DEFAULT_GUARDS = { enabled: true, everyDays: 21, durationDays: 7, anchor: '2026-11-16' };
+
+function integerOr(value, fallback, min, max){
+  const n = Number(value);
+  if (!Number.isFinite(n) || !Number.isInteger(n)) return fallback;
+  if (n < min || n > max) return fallback;
+  return n;
+}
+
+function normalizeGuards(raw){
+  const g = raw && typeof raw === 'object' ? raw : {};
+  const everyDays = integerOr(
+    g.everyDays ?? (Number(g.every) > 0 ? Number(g.every) * 7 : undefined),
+    DEFAULT_GUARDS.everyDays,
+    1,
+    366
+  );
+  const durationDays = integerOr(
+    g.durationDays ?? (Number(g.durationWeeks) > 0 ? Number(g.durationWeeks) * 7 : undefined),
+    DEFAULT_GUARDS.durationDays,
+    1,
+    31
+  );
+  return {
+    enabled: g.enabled !== false,
+    everyDays,
+    durationDays,
+    anchor: typeof g.anchor === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(g.anchor) ? g.anchor : DEFAULT_GUARDS.anchor
+  };
+}
+
+function isGuardDate(dateStr, guards){
+  const g = normalizeGuards(guards);
+  if (!g.enabled) return false;
+  const diff = Math.round((toDate(dateStr) - toDate(g.anchor)) / 86400000);
+  return diff >= 0 && diff % g.everyDays < g.durationDays;
+}
+
+function guardDatesInMonth(year, month, guards){
+  const out = [];
+  const days = new Date(year, month + 1, 0).getDate();
+  for (let d = 1; d <= days; d++) {
+    const date = iso(new Date(year, month, d));
+    if (isGuardDate(date, guards)) out.push(date);
+  }
+  return out;
+}
+
+function guardRuns(dates){
+  const runs = [];
+  for (const ds of dates) {
+    const last = runs[runs.length - 1];
+    if (last && Math.round((toDate(ds) - toDate(last.end)) / 86400000) === 1) last.end = ds;
+    else runs.push({ start: ds, end: ds });
+  }
+  return runs;
+}
+
+
+
+
+return { get DEFAULT_GUARDS(){ return DEFAULT_GUARDS; }, get normalizeGuards(){ return normalizeGuards; }, get isGuardDate(){ return isGuardDate; }, get guardDatesInMonth(){ return guardDatesInMonth; }, get guardRuns(){ return guardRuns; } };
+})();
+
+__mods["js/storage.js"] = (function(){
+const { DEFAULT_HOLIDAYS } = __mods["js/dates.js"];
+const { normalizeGuards } = __mods["js/guards.js"];
+
+const DB = 'ausencias_local_v1';
+const COLORS = ['#2d6cdf', '#16a085', '#d97706', '#8e44ad', '#c0392b', '#0f766e', '#db2777', '#64748b'];
+
+function createDefaultState(){
+  return {
+    employees: [],
+    records: [],
+    settings: {
+      annualDays: 22,
+      workweek: 'monfri',
+      holidays: [...DEFAULT_HOLIDAYS],
+      year: new Date().getFullYear(),
+      guards: normalizeGuards(),
+      undoStack: [],
+      changeHistory: []
+    }
+  };
+}
+
+function normalizeEmployee(employee, index, annualDays){
+  const e = employee && typeof employee === 'object' ? employee : {};
+  return {
+    ...e,
+    id: e.id,
+    name: String(e.name ?? ''),
+    department: String(e.department ?? ''),
+    color: e.color || COLORS[index % COLORS.length],
+    entitlement: Number.isFinite(Number(e.entitlement)) ? Number(e.entitlement) : annualDays,
+    carry: Number.isFinite(Number(e.carry)) ? Number(e.carry) : 0
+  };
+}
+
+function normalizeSettings(settings){
+  const s = settings && typeof settings === 'object' ? settings : {};
+  const annualDays = Number.isFinite(Number(s.annualDays)) ? Number(s.annualDays) : 22;
+  // Bug corregido: si el usuario ha definido festivos (aunque sea lista vacía) se respetan.
+  const holidays = Array.isArray(s.holidays)
+    ? [...new Set(s.holidays.filter((x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)))]
+    : [...DEFAULT_HOLIDAYS];
+  const yearNum = Number(s.year);
+  const year = Number.isInteger(yearNum) && yearNum >= 2026 && yearNum <= 2100 ? yearNum : new Date().getFullYear();
+  return {
+    annualDays,
+    workweek: s.workweek || 'monfri',
+    holidays,
+    year,
+    guards: normalizeGuards(s.guards),
+    undoStack: Array.isArray(s.undoStack) ? s.undoStack : [],
+    changeHistory: Array.isArray(s.changeHistory) ? s.changeHistory : []
+  };
+}
+
+function normalizeState(raw){
+  if (!raw || !Array.isArray(raw.employees) || !Array.isArray(raw.records)) return null;
+  const settings = normalizeSettings(raw.settings);
+  const employees = raw.employees
+    .filter((e) => e && e.id)
+    .map((e, i) => normalizeEmployee(e, i, settings.annualDays));
+  const ids = new Set(employees.map((e) => e.id));
+  const records = raw.records
+    .filter((r) => r && r.id && ids.has(r.employeeId))
+    .map((r) => ({
+      ...r,
+      start: r.start,
+      end: r.end || r.start,
+      type: r.type || 'vacaciones'
+    }));
+  return { employees, records, settings };
+}
+
+function dataSnapshot(state){
+  const copy = JSON.parse(JSON.stringify(state));
+  if (copy.settings) {
+    delete copy.settings.undoStack;
+    delete copy.settings.changeHistory;
+  }
+  return copy;
+}
+
+function resolveStorage(storage){
+  if (storage) return storage;
+  try { return typeof localStorage !== 'undefined' ? localStorage : null; } catch (e) { return null; }
+}
+
+function loadState(storage){
+  const store = resolveStorage(storage);
+  if (!store) return createDefaultState();
+  try {
+    const raw = JSON.parse(store.getItem(DB));
+    return normalizeState(raw) || createDefaultState();
+  } catch (e) {
+    return createDefaultState();
+  }
+}
+
+function writeState(state, storage){
+  const store = resolveStorage(storage);
+  if (!store) throw new Error('Almacenamiento no disponible');
+  store.setItem(DB, JSON.stringify(state));
+}
+
+
+
+
+return { get DB(){ return DB; }, get COLORS(){ return COLORS; }, get createDefaultState(){ return createDefaultState; }, get normalizeEmployee(){ return normalizeEmployee; }, get normalizeSettings(){ return normalizeSettings; }, get normalizeState(){ return normalizeState; }, get dataSnapshot(){ return dataSnapshot; }, get loadState(){ return loadState; }, get writeState(){ return writeState; } };
+})();
+
+__mods["js/ui.js"] = (function(){
+const $ = (selector) => document.querySelector(selector);
+
+function esc(s){
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function typeLabel(t){
+  return ({ vacaciones: 'Vacaciones', baja: 'Baja médica', medica: 'Visita médica', otro: 'Otro permiso' }[t] || t);
+}
+
+function pill(t){
+  const cls = t === 'vacaciones' ? 'vac' : t === 'baja' ? 'baja' : t === 'medica' ? 'med' : 'other';
+  return `<span class="pill ${cls}">${typeLabel(t)}</span>`;
+}
+
+let toastTimer = null;
+
+function toast(text){
+  const el = $('#toast');
+  if (!el) return;
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+let lastFocus = null;
+
+function focusableInModal(){
+  const sheet = $('#sheet');
+  if (!sheet) return [];
+  return [...sheet.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => el.offsetParent !== null);
+}
+
+function openModal(content){
+  const sheet = $('#sheet');
+  const modalEl = $('#modal');
+  if (!sheet || !modalEl) return;
+  lastFocus = document.activeElement;
+  sheet.innerHTML = content;
+  modalEl.classList.add('show');
+  document.body.classList.add('modal-open');
+  requestAnimationFrame(() => {
+    const items = focusableInModal();
+    const field = items.find((el) => /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName));
+    if (field) field.focus();
+    else if (items.length) items[0].focus();
+    else sheet.focus();
+  });
+}
+
+function closeModal(){
+  const modalEl = $('#modal');
+  if (!modalEl) return;
+  modalEl.classList.remove('show');
+  document.body.classList.remove('modal-open');
+  if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+  lastFocus = null;
+}
+
+document.addEventListener('keydown', (e) => {
+  const modalEl = $('#modal');
+  if (!modalEl || !modalEl.classList.contains('show')) return;
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    closeModal();
+    return;
+  }
+  if (e.key !== 'Tab') return;
+  const items = focusableInModal();
+  if (!items.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+});
+
+function newId(){
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  } catch (e) { /* sigue al fallback */ }
+  let out = '';
+  try {
+    if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+      const bytes = crypto.getRandomValues(new Uint8Array(16));
+      out = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch (e) { /* sigue al fallback */ }
+  if (!out) out = Date.now().toString(16) + Math.random().toString(16).slice(2);
+  return `${out.slice(0, 8)}-${out.slice(8, 12)}-${out.slice(12, 16)}-${out.slice(16, 20)}-${out.slice(20, 32)}`;
+}
+
+function download(name, content, type){
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+
+
+return { get $(){ return $; }, get esc(){ return esc; }, get typeLabel(){ return typeLabel; }, get pill(){ return pill; }, get toast(){ return toast; }, get openModal(){ return openModal; }, get closeModal(){ return closeModal; }, get newId(){ return newId; }, get download(){ return download; } };
+})();
+
+__mods["js/state.js"] = (function(){
+const { loadState, writeState, dataSnapshot, normalizeState, createDefaultState } = __mods["js/storage.js"];
+const { toast } = __mods["js/ui.js"];
+
+let state = loadState();
+let lastSavedSnapshot = dataSnapshot(state);
+
+function getState(){
+  return state;
+}
+
+function save(label = 'Cambio guardado'){
+  try {
+    let current = dataSnapshot(state);
+    const previous = lastSavedSnapshot;
+    if (previous && JSON.stringify(previous) !== JSON.stringify(current)) {
+      state.settings.undoStack = state.settings.undoStack || [];
+      state.settings.changeHistory = state.settings.changeHistory || [];
+      state.settings.undoStack.push(previous);
+      if (state.settings.undoStack.length > 10) state.settings.undoStack.shift();
+      state.settings.changeHistory.unshift({ label, at: new Date().toISOString() });
+      state.settings.changeHistory = state.settings.changeHistory.slice(0, 20);
+      current = dataSnapshot(state);
+    }
+    writeState(state);
+    lastSavedSnapshot = current;
+  } catch (e) {
+    toast('No se pudo guardar en el almacenamiento del navegador. Exporta una copia CSV.');
+  }
+}
+
+function replaceState(next){
+  state = normalizeState(next) || createDefaultState();
+  lastSavedSnapshot = dataSnapshot(state);
+  writeState(state);
+  return state;
+}
+
+function undoLastChange(){
+  const stack = state.settings.undoStack || [];
+  if (!stack.length) {
+    toast('No hay cambios que deshacer');
+    return false;
+  }
+  if (!confirm('Se restaurará el estado inmediatamente anterior al último cambio. ¿Continuar?')) return false;
+  const restored = stack.pop();
+  restored.settings.undoStack = stack;
+  restored.settings.changeHistory = [
+    { label: 'Deshacer último cambio', at: new Date().toISOString() },
+    ...(state.settings.changeHistory || [])
+  ].slice(0, 20);
+  state = normalizeState(restored) || restored;
+  lastSavedSnapshot = dataSnapshot(state);
+  writeState(state);
+  return true;
+}
+
+
+
+
+return { get state(){ return state; }, get getState(){ return getState; }, get save(){ return save; }, get replaceState(){ return replaceState; }, get undoLastChange(){ return undoLastChange; } };
+})();
+
+__mods["js/views/home.js"] = (function(){
+const { getState } = __mods["js/state.js"];
+const { fmt, iso, recordDays, usedVacationDays, vacationBalance } = __mods["js/dates.js"];
+const { typeLabel, esc, pill } = __mods["js/ui.js"];
+
+const TYPE_COLOR = {
+  vacaciones: 'var(--vac)',
+  baja: 'var(--baja)',
+  medica: 'var(--visita)',
+  otro: 'var(--permiso)'
+};
+
+function icon(name, size = 18){
+  return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
+}
+
+function bar(label, value, max, color, dotColor){
+  const pct = value > 0 && max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0;
+  return `<div class="bar-row"><div class="bar-head"><span class="bar-label"><i class="empdot" style="background:${dotColor || color}"></i>${esc(label)}</span><b>${value}</b></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+}
+
+function monthActivity(records, year){
+  const out = [];
+  for (let m = 0; m < 12; m++) {
+    const start = `${year}-${String(m + 1).padStart(2, '0')}-01`;
+    const end = iso(new Date(year, m + 1, 0));
+    out.push(records.filter((r) => r.start <= end && r.end >= start).length);
+  }
+  return out;
+}
+
+function renderHome(){
+  const state = getState();
+  const storedYear = Number(state.settings.year || new Date().getFullYear());
+  const y = Math.min(2100, Math.max(2026, storedYear));
+  const today = iso(new Date());
+  const holidays = state.settings.holidays;
+  const yearRecords = state.records.filter((r) => r.start.slice(0, 4) <= String(y) && r.end.slice(0, 4) >= String(y));
+  const upcoming = yearRecords.filter((r) => r.start >= today).sort((a, b) => a.start.localeCompare(b.start)).slice(0, 5);
+
+  const vacationDays = state.employees.reduce((total, e) => total + usedVacationDays(state.records, e.id, y, holidays), 0);
+  const totalEntitlement = state.employees.reduce((total, e) => total + Number(e.entitlement ?? state.settings.annualDays) + Number(e.carry || 0), 0);
+  const vacationPct = totalEntitlement > 0 ? Math.min(100, Math.round((vacationDays / totalEntitlement) * 100)) : 0;
+  const typeCounts = ['vacaciones', 'baja', 'medica', 'otro'].map((t) => ({ t, n: yearRecords.filter((r) => r.type === t).length }));
+  const maxType = Math.max(1, ...typeCounts.map((x) => x.n));
+  const byEmployee = state.employees
+    .map((e) => ({ e, n: yearRecords.filter((r) => r.employeeId === e.id).length }))
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 6);
+  const maxEmp = Math.max(1, ...byEmployee.map((x) => x.n));
+  const months = monthActivity(yearRecords, y);
+  const maxMonth = Math.max(1, ...months);
+
+  const rows = state.employees.map((e) => {
+    const rs = yearRecords.filter((r) => r.employeeId === e.id);
+    const counts = {
+      vacaciones: rs.filter((r) => r.type === 'vacaciones').length,
+      baja: rs.filter((r) => r.type === 'baja').length,
+      medica: rs.filter((r) => r.type === 'medica').length,
+      otro: rs.filter((r) => r.type === 'otro').length
+    };
+    const balance = vacationBalance(e, state.records, y, holidays, state.settings.annualDays);
+    return `<tr>
+      <td><span class="empmark"><i class="empdot" style="background:${esc(e.color || '#2d6cdf')}"></i><span><b>${esc(e.name)}</b><span class="small muted" style="display:block">${esc(e.department || 'Sin departamento')}</span></span></span></td>
+      <td class="num">${counts.vacaciones}</td>
+      <td class="num">${counts.baja}</td>
+      <td class="num">${counts.medica}</td>
+      <td class="num">${counts.otro}</td>
+      <td class="num" style="color:${balance < 0 ? 'var(--error)' : 'var(--on-surface)'}">${balance}</td>
+      <td style="text-align:right"><button type="button" class="btn btn-ghost btn-sm" onclick="app.openEmployee('${e.id}')">Ficha</button></td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="page-head">
+    <div><h2 class="page-title">Resumen anual</h2><p class="page-sub">Vista general de ausencias y saldos de ${y}</p></div>
+    <div class="page-actions">
+      <label class="year-control">${icon('solar:calendar-linear', 18)}<select class="yearpick" aria-label="Año del resumen" onchange="app.setYear(this.value)">${Array.from({ length: 75 }, (_, i) => 2026 + i).map((yr) => `<option value="${yr}" ${yr === y ? 'selected' : ''}>${yr}</option>`).join('')}</select></label>
+      <button type="button" class="btn btn-primary" onclick="app.openRecord()">${icon('solar:add-circle-linear', 18)} Añadir ausencia</button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Empleados</span><span class="kpi-icon">${icon('solar:users-group-rounded-linear')}</span></div><span class="kpi-value">${state.employees.length}</span><span class="kpi-hint">Plantilla registrada</span></div>
+    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Ausencias ${y}</span><span class="kpi-icon">${icon('solar:clipboard-list-linear')}</span></div><span class="kpi-value">${yearRecords.length}</span><span class="kpi-hint">Registros del año</span></div>
+    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Vacaciones usadas</span><span class="kpi-icon">${icon('solar:umbrella-linear')}</span></div><span class="kpi-value">${vacationDays}</span><div class="kpi-progress"><span style="width:${vacationPct}%"></span></div><span class="kpi-hint">${vacationPct}% de ${totalEntitlement} días</span></div>
+    <div class="kpi-card"><div class="kpi-top"><span class="kpi-label">Próximas</span><span class="kpi-icon">${icon('solar:bell-linear')}</span></div><span class="kpi-value">${upcoming.length}</span><span class="kpi-hint">Programadas</span></div>
+  </div>
+
+  <div class="dashboard-grid">
+    <section class="card">
+      <div class="card-head"><h3>Ausencias por tipo</h3><span class="small muted">${y}</span></div>
+      ${typeCounts.map((x) => bar(typeLabel(x.t), x.n, maxType, TYPE_COLOR[x.t], TYPE_COLOR[x.t])).join('')}
+    </section>
+    <section class="card">
+      <div class="card-head"><h3>Carga por mes</h3><span class="small muted">${y}</span></div>
+      <div class="monthchart">${months.map((n, m) => `<div class="month-col"><div class="mval">${n || ''}</div><div class="mbar" style="height:${Math.max(3, Math.round((n / maxMonth) * 100))}%;opacity:${n ? 1 : .22}"></div><div class="mlbl">${new Date(2026, m, 1).toLocaleDateString('es-ES', { month: 'short' })}</div></div>`).join('')}</div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h3>Empleados con más ausencias</h3><span class="small muted">Top ${byEmployee.length || 0}</span></div>
+      ${byEmployee.length ? byEmployee.map((x) => bar(x.e.name, x.n, maxEmp, 'var(--primary)', x.e.color)).join('') : '<div class="empty"><strong>Sin datos</strong>Añade empleados y ausencias para ver el ranking.</div>'}
+    </section>
+    <section class="card">
+      <div class="card-head"><h3>Próximas ausencias</h3><button type="button" class="btn btn-ghost btn-sm" onclick="app.go('registros')">Ver todas</button></div>
+      ${upcoming.length ? upcoming.map((r) => { const e = state.employees.find((x) => x.id === r.employeeId); return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i><b>${esc(e?.name || 'Empleado eliminado')}</b></span>${pill(r.type)}</div><div class="small muted" style="margin-top:4px">${fmt(r.start)} – ${fmt(r.end)}${r.type === 'vacaciones' ? ' · ' + (r.halfDay ? 'medio día' : recordDays(r, holidays) + ' días') : ''}</div></div>`; }).join('') : `<div class="empty"><strong>Sin ausencias futuras</strong>No hay ausencias programadas en ${y}.</div>`}
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="card-head"><h3>Detalle por empleado</h3><span class="small muted">${state.employees.length} empleados</span></div>
+    ${state.employees.length ? `<div class="table-wrap"><table class="data-table"><thead><tr><th>Empleado</th><th style="text-align:right">Vacaciones</th><th style="text-align:right">Bajas</th><th style="text-align:right">Visitas</th><th style="text-align:right">Otros</th><th style="text-align:right">Saldo</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="empty"><strong>Aún no hay empleados</strong>Añade el primer empleado para ver saldos y resúmenes.</div>'}
+  </section>`;
+}
+
+
+
+return { get renderHome(){ return renderHome; } };
+})();
+
+__mods["js/views/employees.js"] = (function(){
+const { getState, save } = __mods["js/state.js"];
+const { fmt, recordDays, usedVacationDays, vacationBalance } = __mods["js/dates.js"];
+const { esc, pill, openModal, closeModal, toast, newId } = __mods["js/ui.js"];
+
+function icon(name, size = 18){
+  return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
+}
+
+function renderEmployees(){
+  const state = getState();
+  const y = state.settings.year;
+  const holidays = state.settings.holidays;
+  const cards = state.employees.map((e) => {
+    const rs = state.records.filter((r) => r.employeeId === e.id && r.start.slice(0, 4) <= String(y) && r.end.slice(0, 4) >= String(y));
+    const search = `${e.name} ${e.department || ''}`.toLowerCase();
+    const balance = vacationBalance(e, state.records, y, holidays, state.settings.annualDays);
+    const used = usedVacationDays(state.records, e.id, y, holidays);
+    const total = Number(e.entitlement ?? state.settings.annualDays) + Number(e.carry || 0);
+    return `<article class="card employee-card" data-search="${esc(search)}">
+      <div class="employee-top">
+        <span class="empmark"><i class="empdot" style="background:${esc(e.color || '#2d6cdf')}"></i><span><b>${esc(e.name)}</b><span class="small muted" style="display:block">${esc(e.department || 'Sin departamento')}</span></span></span>
+        <span class="count-badge">${rs.length}</span>
+      </div>
+      <div class="balance-line"><span>Saldo ${y}</span><b>${balance} días</b></div>
+      <div class="mini-breakdown">
+        <span>${used} de ${total} usados</span>
+        <span>${rs.filter((r) => r.type === 'vacaciones').length} vacaciones</span>
+        <span>${rs.filter((r) => r.type === 'baja').length} bajas</span>
+        <span>${rs.filter((r) => r.type === 'medica').length} visitas</span>
+        <span>${rs.filter((r) => r.type === 'otro').length} otros</span>
+      </div>
+      <button type="button" class="btn btn-secondary btn-block" onclick="app.openEmployee('${e.id}')">Ver ficha y ausencias</button>
+    </article>`;
+  }).join('');
+
+  return `<div class="page-head">
+    <div><h2 class="page-title">Empleados</h2><p class="page-sub">Directorio y saldos de vacaciones</p></div>
+    <button type="button" class="btn btn-primary" onclick="app.openEmployee()">${icon('solar:add-circle-linear', 18)} Añadir empleado</button>
+  </div>
+  ${state.employees.length ? `<div class="toolbar"><div class="search-field">${icon('solar:magnifer-linear', 18)}<input type="search" placeholder="Buscar por nombre o departamento" aria-label="Buscar empleados" oninput="app.filterEmployees(this.value)"></div></div>` : ''}
+  <div id="employeesList">${state.employees.length ? `<div class="employee-grid">${cards}</div>` : '<div class="card empty"><strong>Aún no hay empleados</strong>Añade el primer empleado para empezar.</div>'}</div>
+  <div class="filter-empty" id="employeesEmpty">Ningún empleado coincide con la búsqueda.</div>`;
+}
+
+function openEmployee(id = ''){
+  const state = getState();
+  const employee = state.employees.find((e) => e.id === id);
+  const e = employee || { name: '', department: '', entitlement: state.settings.annualDays, carry: 0, color: '#2d6cdf' };
+  const rs = id ? state.records.filter((r) => r.employeeId === id).sort((a, b) => b.start.localeCompare(a.start)) : [];
+  const y = state.settings.year;
+  const holidays = state.settings.holidays;
+  const balance = vacationBalance(e, state.records, y, holidays, state.settings.annualDays);
+  const used = id ? usedVacationDays(state.records, e.id, y, holidays) : 0;
+  const total = Number(e.entitlement ?? state.settings.annualDays) + Number(e.carry || 0);
+
+  const detail = id ? `<div class="card" style="margin-bottom:var(--space-3)">
+    <div class="balance-line"><span>Saldo ${y}</span><b>${balance} días</b></div>
+    <p class="small muted" style="margin-top:8px">${used} usados de ${total} días disponibles</p>
+    <h3 style="margin:var(--space-4) 0 var(--space-2)">Todas las ausencias</h3>
+    ${rs.length ? rs.map((r) => `<div class="item"><div class="row">${pill(r.type)}<span class="small muted">${fmt(r.start)}${r.end !== r.start ? ' – ' + fmt(r.end) : ''}</span></div><div class="row" style="margin-top:4px"><span class="small">${r.type === 'vacaciones' ? (r.halfDay ? 'Medio día' : recordDays(r, holidays) + ' días laborables') : esc(r.duration || r.notes || '')}</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openRecord('${r.id}')">Editar</button></div></div>`).join('') : '<div class="empty" style="padding:var(--space-4) 0"><strong>Sin ausencias</strong>Este empleado todavía no tiene ausencias.</div>'}
+    <button type="button" class="btn btn-secondary btn-block" style="margin-top:var(--space-3)" onclick="app.openRecordForEmployee('${id}')">${icon('solar:add-circle-linear', 16)} Añadir ausencia</button>
+  </div>` : '';
+
+  openModal(`<div class="modal-head"><div><h2>${id ? 'Ficha del empleado' : 'Nuevo empleado'}</h2><p class="small muted">${id ? 'Datos, saldo y ausencias' : 'Añade un empleado al equipo'}</p></div><button type="button" class="icon-btn" aria-label="Cerrar" onclick="app.closeModal()">${icon('solar:close-circle-linear', 20)}</button></div>
+  ${detail}
+  <form onsubmit="app.saveEmployee(event,'${id}')">
+    <div class="field"><label for="empName">Nombre y apellidos *</label><input id="empName" name="name" required value="${esc(e.name)}" placeholder="Ej. Ana García"></div>
+    <div class="field"><label for="empDept">Departamento / equipo</label><input id="empDept" name="department" value="${esc(e.department)}" placeholder="Ej. Urgencias"></div>
+    <div class="form-grid two">
+      <div class="field"><label for="empEntitlement">Días laborables de vacaciones al año</label><input id="empEntitlement" name="entitlement" type="number" min="0" step=".5" value="${e.entitlement ?? state.settings.annualDays}"></div>
+      <div class="field"><label for="empCarry">Días pendientes de años anteriores</label><input id="empCarry" name="carry" type="number" step=".5" value="${e.carry || 0}"></div>
+    </div>
+    <div class="field"><label for="empColor">Color identificativo</label><input id="empColor" name="color" type="color" value="${esc(e.color || '#2d6cdf')}"></div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Guardar empleado</button>${id ? `<button type="button" class="btn btn-danger" onclick="app.deleteEmployee('${id}')">Eliminar</button>` : ''}</div>
+  </form>`);
+}
+
+function saveEmployee(ev, id){
+  ev.preventDefault();
+  const state = getState();
+  const f = new FormData(ev.target);
+  const old = id ? state.employees.find((x) => x.id === id) : null;
+  const value = {
+    ...(old || {}),
+    id: id || newId(),
+    name: String(f.get('name')).trim(),
+    department: String(f.get('department') || '').trim(),
+    color: f.get('color') || old?.color || '#2d6cdf',
+    entitlement: Number(f.get('entitlement')),
+    carry: Number(f.get('carry'))
+  };
+  if (id) state.employees = state.employees.map((x) => (x.id === id ? value : x));
+  else state.employees.push(value);
+  save(id ? 'Empleado modificado' : 'Nuevo empleado');
+  closeModal();
+  window.app.render();
+  toast('Empleado guardado');
+}
+
+function deleteEmployee(id){
+  const state = getState();
+  if (!confirm('¿Eliminar empleado? Sus registros también se eliminarán.')) return;
+  state.employees = state.employees.filter((e) => e.id !== id);
+  state.records = state.records.filter((r) => r.employeeId !== id);
+  save('Empleado eliminado');
+  closeModal();
+  window.app.render();
+  toast('Empleado eliminado');
+}
+
+
+
+return { get renderEmployees(){ return renderEmployees; }, get openEmployee(){ return openEmployee; }, get saveEmployee(){ return saveEmployee; }, get deleteEmployee(){ return deleteEmployee; } };
+})();
+
+__mods["js/views/records.js"] = (function(){
+const { getState, save } = __mods["js/state.js"];
+const { fmt, iso, recordDays, workingDays, recordYearSpan } = __mods["js/dates.js"];
+const { esc, pill, typeLabel, openModal, closeModal, toast, newId, $ } = __mods["js/ui.js"];
+
+function icon(name, size = 18){
+  return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
+}
+
+function renderRecords(){
+  const state = getState();
+  const rs = [...state.records].sort((a, b) => b.start.localeCompare(a.start));
+  const years = [...new Set([new Date().getFullYear(), ...state.records.flatMap((r) => recordYearSpan(r))])].sort((a, b) => b - a);
+
+  const items = rs.map((r) => {
+    const e = state.employees.find((x) => x.id === r.employeeId);
+    const span = recordYearSpan(r);
+    const search = `${e?.name || ''} ${e?.department || ''} ${r.notes || ''} ${r.duration || ''}`.toLowerCase();
+    const days = r.type === 'vacaciones'
+      ? (r.halfDay ? '0,5 d' : recordDays(r, state.settings.holidays) + ' d')
+      : r.type === 'medica' ? (esc(r.duration || '—')) : '—';
+    return `<div class="record-row" data-search="${esc(search)}" data-type="${esc(r.type)}" data-years="${span.join(',')}">
+      <div class="rc-cell rc-emp" data-label="Empleado"><i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i><b>${esc(e?.name || 'Empleado eliminado')}</b></div>
+      <div class="rc-cell" data-label="Tipo">${pill(r.type)}</div>
+      <div class="rc-cell rc-muted" data-label="Fechas">${fmt(r.start)}${r.end !== r.start ? ' – ' + fmt(r.end) : ''}</div>
+      <div class="rc-cell rc-num" data-label="Días / duración">${days}</div>
+      <div class="rc-cell rc-notes" data-label="Notas">${esc(r.notes || '—')}</div>
+      <div class="rc-cell rc-actions"><button type="button" class="icon-btn btn-sm" aria-label="Editar" onclick="app.openRecord('${r.id}')">${icon('solar:pen-linear', 16)}</button><button type="button" class="icon-btn btn-sm" aria-label="Eliminar" onclick="app.deleteRecord('${r.id}')">${icon('solar:trash-bin-trash-linear', 16)}</button></div>
+    </div>`;
+  }).join('');
+
+  return `<div class="page-head">
+    <div><h2 class="page-title">Registros</h2><p class="page-sub">Libro de ausencias del equipo</p></div>
+    <button type="button" class="btn btn-primary" onclick="app.openRecord()">${icon('solar:add-circle-linear', 18)} Añadir ausencia</button>
+  </div>
+  ${rs.length ? `<div class="toolbar">
+    <div class="search-field">${icon('solar:magnifer-linear', 18)}<input type="search" id="recordsSearch" placeholder="Buscar por empleado, notas..." aria-label="Buscar registros" oninput="app.filterRecords()"></div>
+    <select id="recordsType" aria-label="Filtrar por tipo" onchange="app.filterRecords()"><option value="">Todos los tipos</option>${['vacaciones', 'baja', 'medica', 'otro'].map((t) => `<option value="${t}">${typeLabel(t)}</option>`).join('')}</select>
+    <select id="recordsYear" aria-label="Filtrar por año" onchange="app.filterRecords()"><option value="">Todos los años</option>${years.map((y) => `<option value="${y}">${y}</option>`).join('')}</select>
+    <button type="button" class="btn btn-secondary" onclick="app.exportCSV()">${icon('solar:file-download-linear', 18)} Exportar CSV</button>
+  </div>` : ''}
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="record-table" id="recordsList">${rs.length ? `<div class="record-head"><span>Empleado</span><span>Tipo</span><span>Fechas</span><span>Días / duración</span><span>Notas</span><span></span></div>${items}` : '<div class="empty"><strong>Sin registros</strong>Cuando añadas una ausencia aparecerá aquí.</div>'}</div>
+  </div>
+  <div class="filter-empty" id="recordsEmpty">Ningún registro coincide con los filtros.</div>`;
+}
+
+function openRecord(id = ''){
+  const state = getState();
+  if (!state.employees.length) {
+    toast('Primero añade un empleado');
+    window.app.go('empleados');
+    return;
+  }
+  const r = state.records.find((x) => x.id === id) || { employeeId: state.employees[0].id, type: 'vacaciones', start: iso(new Date()), end: iso(new Date()), duration: '', notes: '' };
+  openModal(`<div class="modal-head"><div><h2>${id ? 'Editar ausencia' : 'Nueva ausencia'}</h2><p class="small muted">Registra la ausencia y revisa los días que se descuentan</p></div><button type="button" class="icon-btn" aria-label="Cerrar" onclick="app.closeModal()">${icon('solar:close-circle-linear', 20)}</button></div>
+  <form onsubmit="app.saveRecord(event,'${id}')">
+    <div class="field"><label for="recEmployee">Empleado *</label><select id="recEmployee" name="employeeId">${state.employees.map((e) => `<option value="${e.id}" ${e.id === r.employeeId ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}</select></div>
+    <div class="field"><label for="rtype">Tipo de ausencia</label><select name="type" id="rtype" onchange="app.toggleRecordFields()">${[['vacaciones', 'Vacaciones'], ['baja', 'Baja médica'], ['medica', 'Visita médica'], ['otro', 'Otro permiso']].map(([v, l]) => `<option value="${v}" ${r.type === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    <div class="form-grid two">
+      <div class="field"><label for="recStart">Fecha inicial *</label><input id="recStart" name="start" type="date" required value="${r.start}" onchange="app.previewVacationPart()"></div>
+      <div class="field"><label for="recEnd">Fecha final *</label><input id="recEnd" name="end" type="date" required value="${r.end}" onchange="app.previewVacationPart()"></div>
+    </div>
+    <div class="field" id="vacationDurationWrap"><label for="vacationPart">Duración de vacaciones</label><select name="vacationPart" id="vacationPart" onchange="app.previewVacationPart()"><option value="full" ${!r.halfDay ? 'selected' : ''}>Día(s) completo(s)</option><option value="half" ${r.halfDay ? 'selected' : ''}>Medio día (0,5)</option></select><p class="help">El medio día se aplica a una única fecha laborable, de lunes a viernes y no festiva.</p></div>
+    <div class="field" id="durationWrap"><label for="recDuration">Duración de visita médica</label><input id="recDuration" name="duration" placeholder="Ej. 2 horas o jornada completa" value="${esc(r.duration || '')}"></div>
+    <div class="field"><label for="recNotes">Observaciones (evita incluir diagnósticos médicos)</label><textarea id="recNotes" name="notes" rows="2" placeholder="Notas internas">${esc(r.notes || '')}</textarea></div>
+    <p class="help" id="calcPreview"></p>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Guardar</button>${id ? `<button type="button" class="btn btn-danger" onclick="app.deleteRecord('${id}')">Eliminar</button>` : ''}</div>
+  </form>`);
+  toggleRecordFields();
+}
+
+function toggleRecordFields(){
+  const t = $('#rtype')?.value;
+  const duration = $('#durationWrap');
+  const vacation = $('#vacationDurationWrap');
+  if (duration) duration.style.display = t === 'medica' ? 'block' : 'none';
+  if (vacation) vacation.style.display = t === 'vacaciones' ? 'block' : 'none';
+  previewVacationPart();
+}
+
+function previewVacationPart(){
+  const state = getState();
+  const part = $('#vacationPart')?.value;
+  const start = $('#sheet input[name="start"]')?.value;
+  const end = $('#sheet input[name="end"]')?.value;
+  const preview = $('#calcPreview');
+  if (!preview) return;
+  if ($('#rtype')?.value !== 'vacaciones') { preview.textContent = ''; return; }
+  if (part === 'half') preview.textContent = 'Se descontará medio día (0,5). La fecha inicial y final deben ser iguales y laborables.';
+  else if (start && end && end >= start) preview.textContent = 'Días laborables que se descontarán: ' + workingDays(start, end, state.settings.holidays);
+}
+
+function saveRecord(ev, id){
+  ev.preventDefault();
+  const state = getState();
+  const f = new FormData(ev.target);
+  const start = f.get('start');
+  const end = f.get('end');
+  if (end < start) { toast('La fecha final no puede ser anterior'); return; }
+
+  const value = {
+    id: id || newId(),
+    employeeId: f.get('employeeId'),
+    type: f.get('type'),
+    start,
+    end,
+    duration: String(f.get('duration') || '').trim(),
+    notes: String(f.get('notes') || '').trim()
+  };
+
+  if (value.type === 'vacaciones') {
+    value.halfDay = f.get('vacationPart') === 'half';
+    if (value.halfDay) {
+      if (start !== end) { toast('Para medio día, selecciona la misma fecha como inicio y fin'); return; }
+      if (workingDays(start, end, state.settings.holidays) !== 1) { toast('El medio día debe ser de lunes a viernes y no festivo'); return; }
+      value.daysOverride = 0.5;
+    } else {
+      value.daysOverride = workingDays(start, end, state.settings.holidays);
+      if (value.daysOverride === 0) { toast('El periodo no contiene días laborables'); return; }
+    }
+  } else {
+    delete value.halfDay;
+    delete value.daysOverride;
+  }
+
+  const overlaps = state.records.filter((x) => x.id !== id && x.employeeId === value.employeeId && x.start <= value.end && x.end >= value.start);
+  if (overlaps.length) {
+    const details = overlaps.map((x) => `${typeLabel(x.type)} (${fmt(x.start)}${x.end !== x.start ? ' – ' + fmt(x.end) : ''})`).join('\n');
+    if (!confirm(`Aviso: este empleado ya tiene otra ausencia que coincide con las fechas:\n${details}\n\n¿Quieres guardar de todos modos?`)) return;
+  }
+
+  if (id) state.records = state.records.map((x) => (x.id === id ? value : x));
+  else state.records.push(value);
+  save(id ? 'Registro modificado' : 'Nueva ausencia');
+  closeModal();
+  window.app.render();
+  toast('Registro guardado');
+}
+
+function deleteRecord(id){
+  const state = getState();
+  if (!confirm('¿Eliminar este registro?')) return;
+  state.records = state.records.filter((r) => r.id !== id);
+  save('Ausencia eliminada');
+  closeModal();
+  window.app.render();
+  toast('Registro eliminado');
+}
+
+function openRecordForEmployee(id){
+  openRecord();
+  const sel = $('#sheet select[name="employeeId"]');
+  if (sel) sel.value = id;
+}
+
+function openRecordForDate(date){
+  openRecord();
+  const start = $('#sheet input[name="start"]');
+  const end = $('#sheet input[name="end"]');
+  if (start && end) { start.value = date; end.value = date; }
+}
+
+
+
+return { get renderRecords(){ return renderRecords; }, get openRecord(){ return openRecord; }, get toggleRecordFields(){ return toggleRecordFields; }, get previewVacationPart(){ return previewVacationPart; }, get saveRecord(){ return saveRecord; }, get deleteRecord(){ return deleteRecord; }, get openRecordForEmployee(){ return openRecordForEmployee; }, get openRecordForDate(){ return openRecordForDate; } };
+})();
+
+__mods["js/views/calendar.js"] = (function(){
+const { getState } = __mods["js/state.js"];
+const { fmt, iso, recordDays, monthLabel } = __mods["js/dates.js"];
+const { isGuardDate, guardDatesInMonth, guardRuns } = __mods["js/guards.js"];
+const { esc, pill } = __mods["js/ui.js"];
+
+function icon(name, size = 18){
+  return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
+}
+
+function daySummary(date, state){
+  const rs = state.records.filter((r) => r.start <= date && r.end >= date);
+  const guard = isGuardDate(date, state.settings.guards);
+  const items = rs.map((r) => {
+    const e = state.employees.find((x) => x.id === r.employeeId);
+    return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i><b>${esc(e?.name || 'Empleado eliminado')}</b></span>${pill(r.type)}</div><div class="row" style="margin-top:4px"><span class="small muted">${fmt(r.start)} – ${fmt(r.end)}${r.type === 'vacaciones' ? ' · ' + (r.halfDay ? 'medio día' : recordDays(r, state.settings.holidays) + ' días laborables') : ''}</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openRecord('${r.id}')">Editar</button></div>${r.notes ? `<div class="small muted" style="margin-top:2px">${esc(r.notes)}</div>` : ''}</div>`;
+  }).join('');
+  return `<div class="card daydetail">
+    <div class="card-head"><div><h3>Resumen del ${fmt(date)}</h3><p class="small muted">${rs.length ? rs.length + ' ausencia(s)' : 'Sin ausencias'}</p></div><button type="button" class="btn btn-secondary btn-sm" onclick="app.openRecordForDate('${date}')">${icon('solar:add-circle-linear', 16)} Añadir</button></div>
+    ${guard ? `<div class="guardinfo" style="margin-bottom:var(--space-2)">${icon('solar:shield-warning-linear', 15)} Guardia informativa</div>` : ''}
+    ${items || '<div class="empty" style="padding:var(--space-4) 0"><strong>Día libre de ausencias</strong>No hay ausencias registradas para este día.</div>'}
+  </div>`;
+}
+
+function renderCalendar(calDate, selectedDate){
+  const state = getState();
+  const y = calDate.getFullYear();
+  const m = calDate.getMonth();
+  const first = new Date(y, m, 1);
+  const offset = (first.getDay() + 6) % 7;
+  const days = new Date(y, m + 1, 0).getDate();
+  let cells = '';
+  ['L', 'M', 'X', 'J', 'V', 'S', 'D'].forEach((x) => { cells += `<div class="dayname">${x}</div>`; });
+  for (let i = 0; i < offset; i++) cells += '<div class="day dim"></div>';
+
+  for (let d = 1; d <= days; d++) {
+    const date = iso(new Date(y, m, d));
+    const rs = state.records.filter((r) => r.start <= date && r.end >= date);
+    const guard = isGuardDate(date, state.settings.guards);
+    const today = date === iso(new Date());
+    const dots = rs.slice(0, 4).map((r) => {
+      const e = state.employees.find((x) => x.id === r.employeeId);
+      return `<i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i>`;
+    }).join('');
+    cells += `<div class="day ${guard ? 'guardday' : ''} ${today ? 'today' : ''} ${selectedDate === date ? 'selected' : ''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d}</span>${rs.length ? `<span class="day-count">${rs.length}</span><span class="day-dots">${dots}</span>` : ''}${guard ? '<span class="guardtag">GUARDIA</span>' : ''}</div>`;
+  }
+
+  const runs = guardRuns(guardDatesInMonth(y, m, state.settings.guards));
+  const summaryDate = selectedDate.slice(0, 7) === `${y}-${String(m + 1).padStart(2, '0')}` ? selectedDate : iso(new Date(y, m, 1));
+
+  return `<div class="page-head">
+    <div><h2 class="page-title">Calendario</h2><p class="page-sub">Vista mensual de ausencias y guardias informativas</p></div>
+    <button type="button" class="btn btn-primary" onclick="app.openRecord()">${icon('solar:add-circle-linear', 18)} Añadir ausencia</button>
+  </div>
+  <div class="calendar-layout">
+    <section class="card calendar-card">
+      <div class="monthbar"><button type="button" class="icon-btn" aria-label="Mes anterior" onclick="app.changeMonth(-1)">${icon('solar:alt-arrow-left-linear', 20)}</button><strong>${monthLabel(y, m)}</strong><button type="button" class="icon-btn" aria-label="Mes siguiente" onclick="app.changeMonth(1)">${icon('solar:alt-arrow-right-linear', 20)}</button></div>
+      <div class="calendar">${cells}</div>
+      <div class="legend"><span><i class="empdot" style="width:8px;height:8px;flex-basis:8px;background:var(--primary)"></i>Empleados con ausencia</span><span><i class="guard-swatch"></i>Guardia informativa</span></div>
+    </section>
+    <aside class="day-panel">
+      ${daySummary(summaryDate, state)}
+      <section class="card"><div class="card-head"><h3>Guardias del mes</h3></div>${runs.map((x) => `<div class="item"><div class="row"><span class="guardinfo">${icon('solar:shield-warning-linear', 14)} GUARDIA</span><b class="small">${fmt(x.start)}${x.start !== x.end ? ' – ' + fmt(x.end) : ''}</b></div></div>`).join('') || '<div class="empty" style="padding:var(--space-4) 0"><strong>Sin guardias</strong>No hay días de guardia este mes.</div>'}</section>
+    </aside>
+  </div>`;
+}
+
+
+
+return { get renderCalendar(){ return renderCalendar; } };
+})();
+
+__mods["js/csv.js"] = (function(){
+function csvCell(value){
+  let s = String(value ?? '');
+  // Anti-inyección: evita que Excel/LibreOffice interprete fórmulas.
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return '"' + s.replace(/"/g, '""') + '"';
+}
+
+function buildStateCSV(state){
+  const rows = [['tipo', 'id', 'datos_json']];
+  (state.employees || []).forEach((x) => rows.push(['empleado', x.id, JSON.stringify(x)]));
+  (state.records || []).forEach((x) => rows.push(['registro', x.id, JSON.stringify(x)]));
+  rows.push(['ajustes', '', JSON.stringify(state.settings)]);
+  return '\ufeff' + rows.map((r) => r.map(csvCell).join(';')).join('\r\n');
+}
+
+function parseCSV(text){
+  const rows = [];
+  let row = [];
+  let field = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+      else if (c === '"') quoted = false;
+      else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ';') { row.push(field); field = ''; }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+    else if (c !== '\r') field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function buildRecordsCSV(records, employees, typeLabel, recordDaysFn){
+  const byId = new Map((employees || []).map((e) => [e.id, e]));
+  const rows = [['Empleado', 'Departamento', 'Tipo', 'Fecha inicio', 'Fecha fin', 'Días laborables vacaciones', 'Duración visita', 'Observaciones']];
+  (records || []).forEach((r) => {
+    const e = byId.get(r.employeeId);
+    const days = r.type === 'vacaciones' ? recordDaysFn(r) : '';
+    rows.push([e?.name, e?.department, typeLabel(r.type), r.start, r.end, days, r.duration, r.notes]);
+  });
+  return '\ufeff' + rows.map((row) => row.map(csvCell).join(';')).join('\r\n');
+}
+
+
+
+
+return { get csvCell(){ return csvCell; }, get buildStateCSV(){ return buildStateCSV; }, get parseCSV(){ return parseCSV; }, get buildRecordsCSV(){ return buildRecordsCSV; } };
+})();
+
+__mods["js/views/settings.js"] = (function(){
+const { getState, save, replaceState } = __mods["js/state.js"];
+const { DEFAULT_HOLIDAYS, recordDays, iso } = __mods["js/dates.js"];
+const { buildStateCSV, parseCSV, buildRecordsCSV } = __mods["js/csv.js"];
+const { esc, typeLabel, toast, download, $ } = __mods["js/ui.js"];
+const { normalizeGuards } = __mods["js/guards.js"];
+
+function icon(name, size = 18){
+  return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
+}
+
+function renderSettings(){
+  const state = getState();
+  const g = state.settings.guards;
+  const history = state.settings.changeHistory || [];
+  const undoCount = (state.settings.undoStack || []).length;
+  return `<div class="page-head"><div><h2 class="page-title">Ajustes</h2><p class="page-sub">Guardias, festivos, copias de seguridad e historial</p></div></div>
+  <div class="settings-grid">
+
+    <section class="card">
+      <div class="card-head"><h3>Guardias informativas</h3><span class="kpi-icon">${icon('solar:shield-warning-linear', 16)}</span></div>
+      <p class="help" style="margin-top:0;margin-bottom:var(--space-3)">Se muestran en el calendario. No se asignan a empleados ni modifican vacaciones, permisos o ausencias.</p>
+      <div class="field"><label for="guardsEnabled">Mostrar guardias</label><select id="guardsEnabled"><option value="yes" ${g.enabled !== false ? 'selected' : ''}>Sí</option><option value="no" ${g.enabled === false ? 'selected' : ''}>No</option></select></div>
+      <div class="form-grid two">
+        <div class="field"><label for="guardEvery">Frecuencia (días)</label><input id="guardEvery" type="number" min="1" max="366" value="${g.everyDays}"></div>
+        <div class="field"><label for="guardDuration">Duración (días)</label><input id="guardDuration" type="number" min="1" max="31" value="${g.durationDays}"></div>
+      </div>
+      <div class="field"><label for="guardAnchor">Primer día de guardia</label><input id="guardAnchor" type="date" value="${g.anchor}"></div>
+      <p class="help">Cada ${g.everyDays} días durante ${g.durationDays} días desde el ${g.anchor.split('-').reverse().join('/')}.</p>
+      <button type="button" class="btn btn-primary btn-block" onclick="app.saveGuardSettings()">Guardar guardias</button>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Vacaciones y festivos</h3><span class="kpi-icon">${icon('solar:umbrella-linear', 16)}</span></div>
+      <div class="field"><label for="annual">Días laborables anuales por defecto</label><input id="annual" type="number" min="0" max="365" value="${state.settings.annualDays}"></div>
+      <div class="field"><label for="holidays">Festivos de Olvera (uno por línea, AAAA-MM-DD)</label><textarea id="holidays" rows="5" placeholder="2026-01-01">${state.settings.holidays.join('\n')}</textarea></div>
+      <p class="help">Puedes añadir o quitar fechas manualmente. Los festivos que borres no se vuelven a añadir automáticamente.</p>
+      <div class="form-actions"><button type="button" class="btn btn-secondary" onclick="app.restoreDefaultHolidays()">Restaurar festivos</button><button type="button" class="btn btn-primary" onclick="app.saveSettings()">Guardar</button></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Copia de seguridad CSV</h3><span class="kpi-icon">${icon('solar:database-linear', 16)}</span></div>
+      <p class="help" style="margin-top:0">El CSV contiene empleados, ausencias y ajustes. En iPhone se abre la hoja de compartir para guardar en Archivos.</p>
+      <button type="button" class="btn btn-primary btn-block" style="margin-bottom:var(--space-3)" onclick="app.saveCSVBackup()">${icon('solar:file-download-linear', 16)} Guardar copia CSV</button>
+      <div class="field"><label for="stateCSVFile">Cargar una copia CSV</label><input type="file" id="stateCSVFile" accept=".csv,text/csv"></div>
+      <button type="button" class="btn btn-secondary btn-block" onclick="app.loadCSVBackup()">Cargar / restaurar CSV</button>
+      <p class="help">Al cargar una copia se sustituirán los datos actuales.</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Copia JSON</h3><span class="kpi-icon">${icon('solar:code-file-linear', 16)}</span></div>
+      <p class="help" style="margin-top:0">Copia adicional en JSON para conservar o mover todos los datos.</p>
+      <button type="button" class="btn btn-secondary btn-block" style="margin-bottom:var(--space-3)" onclick="app.backup()">${icon('solar:download-linear', 16)} Exportar JSON</button>
+      <div class="field"><label for="restoreFile">Restaurar copia JSON</label><input type="file" id="restoreFile" accept=".json,application/json"></div>
+      <button type="button" class="btn btn-secondary btn-block" onclick="app.restore()">Restaurar datos JSON</button>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Informes</h3><span class="kpi-icon">${icon('solar:document-text-linear', 16)}</span></div>
+      <p class="help" style="margin-top:0">El informe solo incluye el listado de ausencias; no muestra saldos.</p>
+      <button type="button" class="btn btn-primary btn-block" style="margin-bottom:var(--space-2)" onclick="app.exportCSV()">${icon('solar:file-download-linear', 16)} Exportar registros CSV</button>
+      <button type="button" class="btn btn-secondary btn-block" onclick="app.openReportOptions()">${icon('solar:printer-linear', 16)} Generar informe imprimible</button>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Historial y deshacer</h3><span class="count-badge">${undoCount}/10</span></div>
+      <p class="help" style="margin-top:0">Se conservan hasta 10 puntos de recuperación y las últimas 20 acciones.</p>
+      <button type="button" class="btn btn-secondary btn-block" style="margin-bottom:var(--space-3)" onclick="app.undoLastChange()" ${undoCount ? '' : 'disabled'}>${icon('solar:restart-linear', 16)} Deshacer último cambio</button>
+      ${history.length ? history.map((h) => `<div class="item"><b class="small">${esc(h.label)}</b><div class="small muted">${new Date(h.at).toLocaleString('es-ES')}</div></div>`).join('') : '<p class="help">Todavía no hay cambios registrados.</p>'}
+    </section>
+
+    <section class="card settings-wide">
+      <div class="row" style="justify-content:flex-start;gap:10px"><span class="kpi-icon">${icon('solar:lock-keyhole-minimalistic-linear', 16)}</span><div><h3>Privacidad</h3><p class="help" style="margin-top:2px">Los datos se guardan solo en este navegador, en localStorage. No se envían a ningún servidor. Si borras los datos del navegador, se perderán: conserva copias externas.</p></div></div>
+    </section>
+  </div>`;
+}
+
+function saveGuardSettings(){
+  const state = getState();
+  const everyDays = Number($('#guardEvery').value);
+  const durationDays = Number($('#guardDuration').value);
+  const anchor = $('#guardAnchor').value;
+  if (!Number.isInteger(everyDays) || everyDays < 1 || everyDays > 366 || !Number.isInteger(durationDays) || durationDays < 1 || durationDays > 31 || !anchor) {
+    toast('Revisa la frecuencia, duración y fecha de inicio');
+    return;
+  }
+  state.settings.guards = normalizeGuards({ enabled: $('#guardsEnabled').value === 'yes', everyDays, durationDays, anchor });
+  save('Ajustes de guardias modificados');
+  window.app.render();
+  toast('Guardias informativas guardadas');
+}
+
+function saveSettings(){
+  const state = getState();
+  const n = Number($('#annual').value);
+  const h = $('#holidays').value.split(/\n/).map((x) => x.trim()).filter(Boolean);
+  if (!Number.isFinite(n) || n < 0) { toast('Número de días no válido'); return; }
+  if (h.some((x) => !/^\d{4}-\d{2}-\d{2}$/.test(x))) { toast('Revisa el formato de los festivos'); return; }
+  state.settings.annualDays = n;
+  state.settings.holidays = [...new Set(h)];
+  save('Ajustes generales modificados');
+  window.app.render();
+  toast('Ajustes guardados');
+}
+
+function restoreDefaultHolidays(){
+  const state = getState();
+  if (!confirm('Se restaurarán los festivos oficiales de Olvera de 2026 y 2027. ¿Continuar?')) return;
+  state.settings.holidays = [...DEFAULT_HOLIDAYS];
+  save('Festivos restaurados');
+  window.app.render();
+  toast('Festivos de Olvera restaurados');
+}
+
+function saveCSVBackup(){
+  const state = getState();
+  const filename = 'control-ausencias-respaldo.csv';
+  const csv = buildStateCSV(state);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const share = async () => {
+    try {
+      const file = new File([blob], filename, { type: 'text/csv' });
+      if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+        await navigator.share({ files: [file], title: 'Copia de seguridad del control de ausencias' });
+        toast('Elige «Guardar en Archivos» para conservar el CSV');
+        return true;
+      }
+    } catch (e) {
+      if (e && e.name === 'AbortError') return true;
+    }
+    return false;
+  };
+  share().then((shared) => {
+    if (shared) return;
+    download(filename, csv, 'text/csv;charset=utf-8');
+    toast('CSV preparado. En iPhone, guárdalo desde Compartir / Archivos');
+  });
+}
+
+function loadCSVBackup(){
+  const file = $('#stateCSVFile')?.files?.[0];
+  if (!file) { toast('Selecciona primero un CSV desde Archivos'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const rows = parseCSV(String(reader.result || '').replace(/^\ufeff/, ''));
+      if (rows[0]?.[0] !== 'tipo' || rows[0]?.[2] !== 'datos_json') throw new Error('Formato');
+      const employees = [];
+      const records = [];
+      let settings = null;
+      for (const row of rows.slice(1)) {
+        if (!row[0]) continue;
+        const value = JSON.parse(row[2] || 'null');
+        if (row[0] === 'empleado') employees.push(value);
+        else if (row[0] === 'registro') records.push(value);
+        else if (row[0] === 'ajustes') settings = value;
+      }
+      if (!settings || !Array.isArray(employees) || !Array.isArray(records)) throw new Error('Datos incompletos');
+      if (!confirm('La carga del CSV sustituirá empleados, ausencias y ajustes actuales. ¿Continuar?')) return;
+      replaceState({ employees, records, settings });
+      window.app.render();
+      toast('Datos CSV cargados correctamente');
+    } catch (e) {
+      toast('No se reconoce el CSV o está incompleto');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function exportCSV(){
+  const state = getState();
+  const csv = buildRecordsCSV(state.records, state.employees, typeLabel, (r) => recordDays(r, state.settings.holidays));
+  download('registros-ausencias.csv', csv, 'text/csv;charset=utf-8');
+}
+
+function backup(){
+  const state = getState();
+  download('copia-control-ausencias-' + iso(new Date()) + '.json', JSON.stringify(state, null, 2), 'application/json');
+}
+
+function restore(){
+  const file = $('#restoreFile')?.files?.[0];
+  if (!file) { toast('Selecciona un archivo JSON'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (!Array.isArray(parsed.employees) || !Array.isArray(parsed.records) || !parsed.settings) throw new Error('Formato');
+      if (!confirm('La restauración sustituirá los datos actuales. ¿Continuar?')) return;
+      replaceState(parsed);
+      window.app.render();
+      toast('Copia restaurada');
+    } catch (e) {
+      toast('Archivo de copia no válido');
+    }
+  };
+  reader.readAsText(file);
+}
+
+
+
+return { get renderSettings(){ return renderSettings; }, get saveGuardSettings(){ return saveGuardSettings; }, get saveSettings(){ return saveSettings; }, get restoreDefaultHolidays(){ return restoreDefaultHolidays; }, get saveCSVBackup(){ return saveCSVBackup; }, get loadCSVBackup(){ return loadCSVBackup; }, get exportCSV(){ return exportCSV; }, get backup(){ return backup; }, get restore(){ return restore; } };
+})();
+
+__mods["js/report.js"] = (function(){
+const { getState } = __mods["js/state.js"];
+const { fmt, iso, recordDaysInYear, recordYearSpan } = __mods["js/dates.js"];
+const { esc, pill, toast, openModal, closeModal, $ } = __mods["js/ui.js"];
+
+function icon(name, size = 18){
+  return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
+}
+
 function openReportOptions(){
- const currentYear=new Date().getFullYear();const years=[...new Set([...Array.from({length:16},(_,i)=>currentYear-5+i),...state.records.flatMap(r=>{let a=Number(r.start.slice(0,4)),b=Number(r.end.slice(0,4)),out=[];for(let y=a;y<=b&&y-a<30;y++)out.push(y);return out})])].sort((a,b)=>b-a);
- modal(`<div class="row"><h2>Configurar informe</h2><button class="ghost" onclick="closeModal()">Cerrar</button></div><p class="small muted">Selecciona los años y empleados que quieres incluir. El informe contendrá únicamente el listado de ausencias.</p><div class="row"><b>Años</b><button type="button" class="ghost" onclick="toggleChecks('reportYear',true)">Todos</button><button type="button" class="ghost" onclick="toggleChecks('reportYear',false)">Ninguno</button></div><div class="card" style="max-height:150px;overflow:auto">${years.map(y=>`<label style="display:flex;align-items:center;gap:8px"><input class="reportYear" type="checkbox" value="${y}" ${y===currentYear?'checked':''} style="width:auto">${y}</label>`).join('')}</div><div class="row"><b>Empleados</b><button type="button" class="ghost" onclick="toggleChecks('reportEmployee',true)">Todos</button><button type="button" class="ghost" onclick="toggleChecks('reportEmployee',false)">Ninguno</button></div><div class="card" style="max-height:220px;overflow:auto">${state.employees.map(e=>`<label style="display:flex;align-items:center;gap:8px"><input class="reportEmployee" type="checkbox" value="${e.id}" checked style="width:auto"><i class="empdot" style="background:${esc(e.color||'#2d6cdf')}"></i>${esc(e.name)}</label>`).join('')||'<div class="empty">No hay empleados.</div>'}</div><div class="actions"><button type="button" class="secondary" onclick="closeModal()">Cancelar</button><button type="button" onclick="generateReport()">Generar informe</button></div>`)
+  const state = getState();
+  const currentYear = new Date().getFullYear();
+  const allYears = [...new Set([
+    ...Array.from({ length: 16 }, (_, i) => currentYear - 5 + i),
+    ...state.records.flatMap((r) => recordYearSpan(r))
+  ])].sort((a, b) => b - a);
+  const years = [currentYear, ...allYears.filter((y) => y !== currentYear)];
+
+  openModal(`<div class="modal-head"><div><h2>Configurar informe</h2><p class="small muted">Elige años y empleados. Solo se incluirán ausencias.</p></div><button type="button" class="icon-btn" aria-label="Cerrar" onclick="app.closeModal()">${icon('solar:close-circle-linear', 20)}</button></div>
+  <div class="row" style="margin-bottom:var(--space-2)"><b>Años</b><div style="display:flex;gap:4px"><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportYear',true)">Todos</button><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportYear',false)">Ninguno</button></div></div>
+  <div class="check-list" style="margin-bottom:var(--space-4)">${years.map((y) => `<label><input class="reportYear" type="checkbox" value="${y}" ${y === currentYear ? 'checked' : ''}> <span>${y}</span></label>`).join('')}</div>
+  <div class="row" style="margin-bottom:var(--space-2)"><b>Empleados</b><div style="display:flex;gap:4px"><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportEmployee',true)">Todos</button><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportEmployee',false)">Ninguno</button></div></div>
+  <div class="check-list" style="margin-bottom:var(--space-4)">${state.employees.map((e) => `<label><input class="reportEmployee" type="checkbox" value="${e.id}" checked><i class="empdot" style="background:${esc(e.color || '#2d6cdf')}"></i><span>${esc(e.name)}</span></label>`).join('') || '<div class="empty" style="padding:var(--space-4) 0"><strong>Sin empleados</strong>Añade empleados para generar informes.</div>'}</div>
+  <div class="form-actions"><button type="button" class="btn btn-secondary" onclick="app.closeModal()">Cancelar</button><button type="button" class="btn btn-primary" onclick="app.generateReport()">Generar informe</button></div>`);
 }
-function toggleChecks(cls,value){document.querySelectorAll('#sheet .'+cls).forEach(x=>x.checked=value)}
+
+function toggleChecks(cls, value){
+  document.querySelectorAll('#sheet .' + cls).forEach((x) => { x.checked = value; });
+}
+
 function generateReport(){
- const years=[...document.querySelectorAll('#sheet .reportYear:checked')].map(x=>Number(x.value)),employees=[...document.querySelectorAll('#sheet .reportEmployee:checked')].map(x=>x.value);
- if(!years.length||!employees.length){toast('Selecciona al menos un año y un empleado');return}
- const selectedEmployees=state.employees.filter(e=>employees.includes(e.id));
- const records=state.records.filter(r=>employees.includes(r.employeeId)&&years.some(y=>r.start<=`${y}-12-31`&&r.end>=`${y}-01-01`)).sort((a,b)=>a.start.localeCompare(b.start));
- const period=years.sort((a,b)=>a-b).join(', ');
- let groups=selectedEmployees.map(e=>{let rs=records.filter(r=>r.employeeId===e.id);return `<section class="report-group"><h3><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(e.color||'#2d6cdf')};margin-right:7px"></span>${esc(e.name)}${e.department?' · '+esc(e.department):''}</h3>${rs.length?`<table><thead><tr><th>Tipo</th><th>Fecha(s)</th><th>Duración</th><th>Observaciones</th></tr></thead><tbody>${rs.map(r=>{let shownYears=years.filter(y=>r.start<=`${y}-12-31`&&r.end>=`${y}-01-01`);let dates=shownYears.map(y=>{let a=r.start<`${y}-01-01`?`${y}-01-01`:r.start,b=r.end>`${y}-12-31`?`${y}-12-31`:r.end;return a===b?fmt(a):`${fmt(a)} – ${fmt(b)}`}).join('<br>');let duration=r.type==='vacaciones'?(r.halfDay?'Medio día (0,5)':shownYears.reduce((n,y)=>n+recordDaysInYear(r,y),0)+' días laborables'):esc(r.duration||'—');return `<tr><td>${pill(r.type)}</td><td>${dates}</td><td>${duration}</td><td>${esc(r.notes||'')}</td></tr>`}).join('')}</tbody></table>`:'<p class="small muted">Sin ausencias en los años seleccionados.</p>'}</section>`}).join('');
- const total=records.length;
- closeModal();const screen=$('#reportScreen');screen.innerHTML=`<div class="report-toolbar"><button class="secondary" onclick="closeReport()">‹ Volver a la aplicación</button><button onclick="createReportImages()"><iconify-icon icon="solar:gallery-add-bold" width="18"></iconify-icon> Crear imágenes</button></div><article class="report-paper"><h1>Informe de ausencias</h1><p><b>Año(s):</b> ${period}<br><b>Generado:</b> ${fmt(iso(new Date()))}<br><b>Empleados:</b> ${selectedEmployees.length} · <b>Registros:</b> ${total}</p>${groups||'<p>No hay ausencias para los filtros seleccionados.</p>'}<p class="small muted" style="margin-top:25px">Documento generado desde Control de ausencias.</p></article>`;screen.classList.add('show');
+  const state = getState();
+  const years = [...document.querySelectorAll('#sheet .reportYear:checked')].map((x) => Number(x.value));
+  const employeeIds = [...document.querySelectorAll('#sheet .reportEmployee:checked')].map((x) => x.value);
+  if (!years.length || !employeeIds.length) { toast('Selecciona al menos un año y un empleado'); return; }
+
+  const selectedEmployees = state.employees.filter((e) => employeeIds.includes(e.id));
+  const records = state.records
+    .filter((r) => employeeIds.includes(r.employeeId) && years.some((y) => r.start <= `${y}-12-31` && r.end >= `${y}-01-01`))
+    .sort((a, b) => a.start.localeCompare(b.start));
+  const period = [...years].sort((a, b) => a - b).join(', ');
+
+  const groups = selectedEmployees.map((e) => {
+    const rs = records.filter((r) => r.employeeId === e.id);
+    const body = rs.length
+      ? `<div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Fecha(s)</th><th>Duración</th><th>Observaciones</th></tr></thead><tbody>${rs.map((r) => {
+          const shownYears = years.filter((y) => r.start <= `${y}-12-31` && r.end >= `${y}-01-01`);
+          const dates = shownYears.map((y) => {
+            const a = r.start < `${y}-01-01` ? `${y}-01-01` : r.start;
+            const b = r.end > `${y}-12-31` ? `${y}-12-31` : r.end;
+            return a === b ? fmt(a) : `${fmt(a)} – ${fmt(b)}`;
+          }).join('<br>');
+          const duration = r.type === 'vacaciones'
+            ? (r.halfDay ? 'Medio día (0,5)' : shownYears.reduce((n, y) => n + recordDaysInYear(r, y, state.settings.holidays), 0) + ' días laborables')
+            : esc(r.duration || '—');
+          return `<tr><td>${pill(r.type)}</td><td>${dates}</td><td>${duration}</td><td>${esc(r.notes || '')}</td></tr>`;
+        }).join('')}</tbody></table></div>`
+      : '<p class="small muted">Sin ausencias en los años seleccionados.</p>';
+    return `<section class="report-group"><h3><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${esc(e.color || '#2d6cdf')};margin-right:7px"></span>${esc(e.name)}${e.department ? ' · ' + esc(e.department) : ''}</h3>${body}</section>`;
+  }).join('');
+
+  closeModal();
+  const screen = $('#reportScreen');
+  screen.innerHTML = `<div class="report-toolbar"><button type="button" class="btn btn-secondary" onclick="app.closeReport()">${icon('solar:alt-arrow-left-linear', 18)} Volver</button><button type="button" class="btn btn-secondary" onclick="app.createReportImages()">${icon('solar:gallery-add-linear', 18)} Crear imágenes</button><button type="button" class="btn btn-primary" onclick="window.print()">${icon('solar:printer-linear', 18)} Imprimir</button></div><article class="report-paper"><h1>Informe de ausencias</h1><p class="small muted"><b>Año(s):</b> ${period} · <b>Generado:</b> ${fmt(iso(new Date()))} · <b>Empleados:</b> ${selectedEmployees.length} · <b>Registros:</b> ${records.length}</p>${groups || '<p>No hay ausencias para los filtros seleccionados.</p>'}<p class="small muted" style="margin-top:var(--space-5)">Documento interno generado desde Control de ausencias. Datos guardados localmente en el navegador.</p></article>`;
+  screen.classList.add('show');
 }
+
 function createReportImages(){
- const screen=$('#reportScreen'),paper=screen.querySelector('.report-paper');if(!paper){toast('Primero genera el informe');return}
- const toolbar=screen.querySelector('.report-toolbar');let old=screen.querySelector('.image-pages');if(old)old.remove();
- const pages=document.createElement('div');pages.className='image-pages';
- const help=document.createElement('div');help.className='image-help';help.innerHTML='<b>Cómo guardar en iPhone:</b> mantén pulsada cada imagen y elige «Guardar en Fotos» o «Guardar en Archivos». En ordenador puedes hacer clic derecho y guardar la imagen.';
- const W=1240,H=1754,M=88,CONTENT=W-M*2;let canvas,ctx,y,pageNo=0;
- function newPage(){canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;ctx=canvas.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);y=110;pageNo++;ctx.fillStyle='#17324d';ctx.fillRect(0,0,W,18);ctx.fillStyle='#17324d';ctx.font='bold 48px Arial';ctx.fillText('Informe de ausencias',M,y);y+=58;ctx.fillStyle='#526276';ctx.font='26px Arial';let meta=(paper.querySelector('p')?.innerText||'').replace(/\n/g,' · ');drawWrapped(meta,M,y,CONTENT,36);y+=82;}
- function drawWrapped(text,x,yy,maxWidth,lineH,font='26px Arial',color='#263548'){ctx.font=font;ctx.fillStyle=color;let words=String(text||'').split(/\s+/),line='';for(const word of words){let test=line?line+' '+word:word;if(ctx.measureText(test).width>maxWidth&&line){ctx.fillText(line,x,yy);yy+=lineH;line=word}else line=test}if(line){ctx.fillText(line,x,yy);yy+=lineH}return yy}
- function addEmployee(title){if(y>H-220){finishPage();newPage()}ctx.fillStyle='#edf3fb';ctx.fillRect(M,y-38,CONTENT,54);ctx.fillStyle='#17324d';ctx.font='bold 31px Arial';ctx.fillText(title,M+18,y);y+=54;}
- function addRecord(cells){const labels=['Tipo','Fecha(s)','Duración','Observaciones'];let lines=[];for(let i=0;i<cells.length;i++){const val=(cells[i]||'—').replace(/\s+/g,' ').trim();ctx.font='bold 23px Arial';let prefix=labels[i]+': ';ctx.fillStyle='#526276';let line=prefix+val;let wrap=[];let words=line.split(/\s+/),cur='';ctx.font='23px Arial';for(const w of words){let t=cur?cur+' '+w:w;if(ctx.measureText(t).width>CONTENT-54&&cur){wrap.push(cur);cur=w}else cur=t}if(cur)wrap.push(cur);lines.push(...wrap)}let h=lines.length*34+30;if(y+h>H-105){finishPage();newPage()}ctx.fillStyle='#fff';ctx.strokeStyle='#dce4ee';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(M,y,CONTENT,h,12);ctx.fill();ctx.stroke();let yy=y+36;ctx.font='23px Arial';ctx.fillStyle='#263548';for(const line of lines){ctx.fillText(line,M+18,yy);yy+=34}y+=h+14;}
- function finishPage(){ctx.fillStyle='#718096';ctx.font='20px Arial';ctx.fillText('Control de ausencias',M,H-45);ctx.textAlign='right';ctx.fillText('Página '+pageNo,W-M,H-45);ctx.textAlign='left';let img=document.createElement('img');img.className='image-page';img.alt='Informe de ausencias, página '+pageNo;img.src=canvas.toDataURL('image/png');img.draggable=false;pages.appendChild(img)}
- newPage();const sections=[...paper.querySelectorAll('.report-group')];
- for(const section of sections){const heading=section.querySelector('h3')?.innerText||'Empleado';addEmployee(heading);const rows=[...section.querySelectorAll('tbody tr')];if(!rows.length){addRecord(['','Sin ausencias en los años seleccionados','','']);continue}for(const tr of rows){const cells=[...tr.children].map(td=>td.innerText);addRecord(cells)}}
- const footer=paper.querySelector('p.small')?.innerText;if(footer){if(y>H-180){finishPage();newPage()}drawWrapped(footer,M,y,CONTENT,30,'21px Arial','#718096')}
- finishPage();screen.insertBefore(help,toolbar.nextSibling);screen.insertBefore(pages,help.nextSibling);pages.scrollIntoView({behavior:'smooth',block:'start'});toast('Imágenes creadas. Mantén pulsada una para guardarla.');
+  const screen = $('#reportScreen');
+  const paper = screen.querySelector('.report-paper');
+  if (!paper) { toast('Primero genera el informe'); return; }
+  const toolbar = screen.querySelector('.report-toolbar');
+  const old = screen.querySelector('.image-pages');
+  if (old) old.remove();
+
+  const pages = document.createElement('div');
+  pages.className = 'image-pages';
+  const help = document.createElement('div');
+  help.className = 'image-help';
+  help.innerHTML = '<b>Cómo guardar en iPhone:</b> mantén pulsada cada imagen y elige «Guardar en Fotos» o «Guardar en Archivos». En ordenador puedes hacer clic derecho y guardar la imagen.';
+
+  const W = 1240;
+  const H = 1754;
+  const M = 88;
+  const CONTENT = W - M * 2;
+  let canvas;
+  let ctx;
+  let y;
+  let pageNo = 0;
+
+  function newPage(){
+    canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+    y = 110;
+    pageNo++;
+    ctx.fillStyle = '#1e40af';
+    ctx.fillRect(0, 0, W, 18);
+    ctx.fillStyle = '#0b1c30';
+    ctx.font = 'bold 48px Inter, Arial';
+    ctx.fillText('Informe de ausencias', M, y);
+    y += 58;
+    ctx.fillStyle = '#424752';
+    ctx.font = '26px Inter, Arial';
+    const meta = (paper.querySelector('p')?.innerText || '').replace(/\n/g, ' · ');
+    drawWrapped(meta, M, y, CONTENT, 36);
+    y += 82;
+  }
+
+  function drawWrapped(text, x, yy, maxWidth, lineH, font = '26px Inter, Arial', color = '#0b1c30'){
+    ctx.font = font;
+    ctx.fillStyle = color;
+    const words = String(text || '').split(/\s+/);
+    let line = '';
+    for (const word of words) {
+      const test = line ? line + ' ' + word : word;
+      if (ctx.measureText(test).width > maxWidth && line) { ctx.fillText(line, x, yy); yy += lineH; line = word; }
+      else line = test;
+    }
+    if (line) { ctx.fillText(line, x, yy); yy += lineH; }
+    return yy;
+  }
+
+  function addEmployee(title){
+    if (y > H - 220) { finishPage(); newPage(); }
+    ctx.fillStyle = '#eff4ff';
+    ctx.fillRect(M, y - 38, CONTENT, 54);
+    ctx.fillStyle = '#1e40af';
+    ctx.font = 'bold 31px Inter, Arial';
+    ctx.fillText(title, M + 18, y);
+    y += 54;
+  }
+
+  function addRecord(cells){
+    const labels = ['Tipo', 'Fecha(s)', 'Duración', 'Observaciones'];
+    const lines = [];
+    for (let i = 0; i < cells.length; i++) {
+      const val = (cells[i] || '—').replace(/\s+/g, ' ').trim();
+      ctx.font = 'bold 23px Inter, Arial';
+      const prefix = labels[i] + ': ';
+      ctx.fillStyle = '#424752';
+      const line = prefix + val;
+      const wrap = [];
+      const words = line.split(/\s+/);
+      let cur = '';
+      ctx.font = '23px Inter, Arial';
+      for (const w of words) {
+        const t = cur ? cur + ' ' + w : w;
+        if (ctx.measureText(t).width > CONTENT - 54 && cur) { wrap.push(cur); cur = w; }
+        else cur = t;
+      }
+      if (cur) wrap.push(cur);
+      lines.push(...wrap);
+    }
+    const h = lines.length * 34 + 30;
+    if (y + h > H - 105) { finishPage(); newPage(); }
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#c2c6d4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(M, y, CONTENT, h, 12);
+    ctx.fill();
+    ctx.stroke();
+    let yy = y + 36;
+    ctx.font = '23px Inter, Arial';
+    ctx.fillStyle = '#0b1c30';
+    for (const line of lines) { ctx.fillText(line, M + 18, yy); yy += 34; }
+    y += h + 14;
+  }
+
+  function finishPage(){
+    ctx.fillStyle = '#424752';
+    ctx.font = '20px Inter, Arial';
+    ctx.fillText('Control de ausencias', M, H - 45);
+    ctx.textAlign = 'right';
+    ctx.fillText('Página ' + pageNo, W - M, H - 45);
+    ctx.textAlign = 'left';
+    const img = document.createElement('img');
+    img.className = 'image-page';
+    img.alt = 'Informe de ausencias, página ' + pageNo;
+    img.src = canvas.toDataURL('image/png');
+    img.draggable = false;
+    pages.appendChild(img);
+  }
+
+  newPage();
+  const sections = [...paper.querySelectorAll('.report-group')];
+  for (const section of sections) {
+    const heading = section.querySelector('h3')?.innerText || 'Empleado';
+    addEmployee(heading);
+    const rows = [...section.querySelectorAll('tbody tr')];
+    if (!rows.length) { addRecord(['', 'Sin ausencias en los años seleccionados', '', '']); continue; }
+    for (const tr of rows) addRecord([...tr.children].map((td) => td.innerText));
+  }
+
+  const footer = paper.querySelector('p.small')?.innerText;
+  if (footer) {
+    if (y > H - 180) { finishPage(); newPage(); }
+    drawWrapped(footer, M, y, CONTENT, 30, '21px Inter, Arial', '#424752');
+  }
+  finishPage();
+  screen.insertBefore(help, toolbar.nextSibling);
+  screen.insertBefore(pages, help.nextSibling);
+  pages.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  toast('Imágenes creadas. Mantén pulsada una para guardarla.');
 }
-function closeReport(){$('#reportScreen').classList.remove('show')}
-$('#nav').addEventListener('click',e=>{let b=e.target.closest('button[data-tab]');if(b)go(b.dataset.tab)});
-load();render();
-if('serviceWorker' in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+
+function closeReport(){
+  $('#reportScreen').classList.remove('show');
+}
+
+
+
+return { get openReportOptions(){ return openReportOptions; }, get toggleChecks(){ return toggleChecks; }, get generateReport(){ return generateReport; }, get createReportImages(){ return createReportImages; }, get closeReport(){ return closeReport; } };
+})();
+
+__mods["js/app.js"] = (function(){
+const { getState, save, undoLastChange } = __mods["js/state.js"];
+const { iso } = __mods["js/dates.js"];
+const { closeModal, toast } = __mods["js/ui.js"];
+const { renderHome } = __mods["js/views/home.js"];
+const { renderEmployees, openEmployee, saveEmployee, deleteEmployee } = __mods["js/views/employees.js"];
+const { renderRecords, openRecord, saveRecord, deleteRecord, openRecordForEmployee, openRecordForDate, toggleRecordFields, previewVacationPart } = __mods["js/views/records.js"];
+const { renderCalendar } = __mods["js/views/calendar.js"];
+const { renderSettings, saveGuardSettings, saveSettings, restoreDefaultHolidays, saveCSVBackup, loadCSVBackup, exportCSV, backup, restore } = __mods["js/views/settings.js"];
+const { openReportOptions, toggleChecks, generateReport, createReportImages, closeReport } = __mods["js/report.js"];
+
+let tab = 'inicio';
+const calDate = new Date();
+let selectedDate = iso(new Date());
+
+function render(){
+  document.querySelectorAll('#nav button').forEach((b) => {
+    const active = b.dataset.tab === tab;
+    b.classList.toggle('active', active);
+    if (active) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
+  document.body.dataset.tab = tab;
+  const app = document.querySelector('#app');
+  if (tab === 'inicio') app.innerHTML = renderHome();
+  else if (tab === 'empleados') app.innerHTML = renderEmployees();
+  else if (tab === 'calendario') app.innerHTML = renderCalendar(calDate, selectedDate);
+  else if (tab === 'registros') app.innerHTML = renderRecords();
+  else if (tab === 'ajustes') app.innerHTML = renderSettings();
+}
+
+function go(next){
+  tab = next;
+  render();
+  window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function setYear(value){
+  const state = getState();
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < 2026 || n > 2100) { toast('Selecciona un año entre 2026 y 2100'); return; }
+  state.settings.year = n;
+  save('Año de consulta cambiado');
+  render();
+}
+
+function selectDay(date){
+  selectedDate = date;
+  render();
+}
+
+function changeMonth(delta){
+  calDate.setMonth(calDate.getMonth() + delta);
+  render();
+}
+
+function filterEmployees(query){
+  const q = String(query || '').trim().toLowerCase();
+  let visible = 0;
+  document.querySelectorAll('#employeesList [data-search]').forEach((el) => {
+    const ok = !q || el.dataset.search.includes(q);
+    el.style.display = ok ? '' : 'none';
+    if (ok) visible++;
+  });
+  const empty = document.getElementById('employeesEmpty');
+  if (empty) empty.style.display = visible ? 'none' : 'block';
+}
+
+function filterRecords(){
+  const q = (document.getElementById('recordsSearch')?.value || '').trim().toLowerCase();
+  const type = document.getElementById('recordsType')?.value || '';
+  const year = document.getElementById('recordsYear')?.value || '';
+  let visible = 0;
+  document.querySelectorAll('#recordsList [data-search]').forEach((el) => {
+    const okQuery = !q || el.dataset.search.includes(q);
+    const okType = !type || el.dataset.type === type;
+    const okYear = !year || (el.dataset.years || '').split(',').includes(year);
+    const ok = okQuery && okType && okYear;
+    el.style.display = ok ? '' : 'none';
+    if (ok) visible++;
+  });
+  const empty = document.getElementById('recordsEmpty');
+  if (empty) empty.style.display = visible ? 'none' : 'block';
+}
+
+function handleUndo(){
+  if (undoLastChange()) {
+    render();
+    toast('Último cambio deshecho');
+  }
+}
+
+window.app = {
+  render, go, setYear, selectDay, changeMonth, filterEmployees, filterRecords,
+  openEmployee, saveEmployee, deleteEmployee,
+  openRecord, saveRecord, deleteRecord, openRecordForEmployee, openRecordForDate, toggleRecordFields, previewVacationPart,
+  saveGuardSettings, saveSettings, restoreDefaultHolidays,
+  saveCSVBackup, loadCSVBackup, exportCSV, backup, restore,
+  openReportOptions, toggleChecks, generateReport, createReportImages, closeReport,
+  closeModal, undoLastChange: handleUndo
+};
+
+document.getElementById('nav').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-tab]');
+  if (b) go(b.dataset.tab);
+});
+
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target.id === 'modal') closeModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  const day = e.target.closest?.('.day[role="button"]');
+  if (!day || !['Enter', ' '].includes(e.key)) return;
+  e.preventDefault();
+  day.click();
+});
+
+render();
+
+return {  };
+})();
+})();
 </script>
 </body></html>
