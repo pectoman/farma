@@ -401,6 +401,38 @@ hr{border:0;border-top:1px solid var(--outline-variant);margin:var(--space-4) 0}
 .daydetail .modal-head{margin-bottom:var(--space-2)}
 .guardinfo{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:var(--radius-full);background:var(--guardia-bg);border:1px solid var(--guardia-border);color:var(--guardia);font-size:var(--text-xs);font-weight:700}
 
+
+/* Mejoras de calendario: filtros, vistas y resumen */
+.calendar-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.calendar-controls select{min-width:145px;max-width:100%}
+.calendar-switches{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--on-surface-variant)}
+.calendar-switches label{display:inline-flex;align-items:center;gap:5px}
+.view-switch{display:flex;gap:4px;flex-wrap:wrap}
+.view-switch .btn.active{background:var(--primary-container);color:var(--on-primary-container);border-color:var(--primary)}
+.calendar-list{display:flex;flex-direction:column;gap:7px}
+.calendar-list-day{display:grid;grid-template-columns:74px 1fr;gap:10px;padding:10px;border:1px solid var(--outline-variant);border-radius:9px;background:var(--surface-lowest)}
+.calendar-list-date{font-weight:700;font-size:13px}
+.calendar-list-events{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.calendar-event{display:inline-flex;align-items:center;gap:5px;border-radius:6px;padding:3px 7px;background:var(--surface-low);font-size:11px}
+.calendar-summary{margin-top:12px;overflow:auto}
+.calendar-summary table{width:100%;border-collapse:collapse;font-size:12px;min-width:560px}
+.calendar-summary th,.calendar-summary td{padding:8px;border-bottom:1px solid var(--outline-variant);text-align:right;white-space:nowrap}
+.calendar-summary th:first-child,.calendar-summary td:first-child{text-align:left}
+.report-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:16px 0}
+.report-cal-head{text-align:center;font-size:11px;font-weight:700;padding:5px;background:#eef2f8}
+.report-cal-day{min-height:82px;border:1px solid #cbd5e1;border-radius:5px;padding:5px;overflow:hidden;font-size:10px;background:#fff;color:#172033}
+.report-cal-day.empty{border:0;background:transparent}
+.report-cal-day .n{font-weight:700;font-size:12px;margin-bottom:4px}
+.report-cal-event{display:block;font-size:8px;line-height:1.2;padding:2px 3px;border-radius:3px;margin:2px 0;overflow-wrap:anywhere;background:#eef2f8}
+.report-cal-legend{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;margin:8px 0 16px}
+.report-cal-legend span{display:inline-flex;align-items:center;gap:4px}
+.report-summary-table{width:100%;border-collapse:collapse;font-size:11px;margin:12px 0 20px}
+.report-summary-table th,.report-summary-table td{border-bottom:1px solid #cbd5e1;padding:6px;text-align:right}
+.report-summary-table th:first-child,.report-summary-table td:first-child{text-align:left}
+.report-calendar-grid+.report-cal-legend{margin-top:8px}
+@media(max-width:767px){.calendar-list-day{grid-template-columns:1fr}.calendar-list-date{border-bottom:1px solid var(--outline-variant);padding-bottom:5px}.calendar-controls select{flex:1;min-width:130px}.report-cal-day{min-height:64px;padding:3px}.report-cal-event{font-size:7px}}
+@media print{.report-calendar-grid{break-inside:avoid}.report-cal-day{min-height:70px}.report-summary-table{break-inside:auto}}
+
 /* ========================================================================== */
 /* Registros                                                                  */
 /* ========================================================================== */
@@ -1397,6 +1429,7 @@ __mods["js/views/records.js"] = (function(){
 const { getState, save } = __mods["js/state.js"];
 const { fmt, iso, recordDays, workingDays, recordYearSpan, recordDaysInYear, workDayUnitsInRange } = __mods["js/dates.js"];
 const { esc, pill, typeLabel, openModal, closeModal, toast, newId, $ } = __mods["js/ui.js"];
+const { isGuardDate } = __mods["js/guards.js"];
 
 function icon(name, size = 18){
   return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
@@ -1543,6 +1576,11 @@ function saveRecord(ev, id){
     delete value.daysOverride;
   }
 
+  if(value.type==='vacaciones' && state.settings.guards?.enabled){let guardHit=false;const cur=new Date(value.start+'T12:00:00'),last=new Date(value.end+'T12:00:00');for(let d=new Date(cur);d<=last;d.setDate(d.getDate()+1)){const ds=iso(d);if(isGuardDate(ds,state.settings.guards)){guardHit=true;break;}}if(guardHit&&!confirm('Aviso: el periodo de vacaciones coincide con uno o más días de guardia. ¿Quieres guardar de todos modos?'))return;}
+  const workConflicts=(state.workDays||[]).filter(w=>w.employeeId===value.employeeId&&w.start<=value.end&&w.end>=value.start);
+  if(workConflicts.length&&!confirm('Aviso: este empleado tiene días de refuerzo programados durante la ausencia. ¿Guardar de todos modos?'))return;
+  const otherEmployees=new Set(state.records.filter(x=>x.id!==id&&x.employeeId!==value.employeeId&&x.start<=value.end&&x.end>=value.start).map(x=>x.employeeId));
+  if(otherEmployees.size>=2&&!confirm(`Aviso de cobertura: ya hay ${otherEmployees.size} empleados con ausencias que coinciden con este periodo. Conviene revisar la cobertura. ¿Guardar de todos modos?`))return;
   const overlaps = state.records.filter((x) => x.id !== id && x.employeeId === value.employeeId && x.start <= value.end && x.end >= value.start);
   if (overlaps.length) {
     const details = overlaps.map((x) => `${typeLabel(x.type)} (${fmt(x.start)}${x.end !== x.start ? ' – ' + fmt(x.end) : ''})`).join('\n');
@@ -1607,7 +1645,9 @@ function saveWorkDay(ev,id){
   if(end<start){toast('La fecha final no puede ser anterior a la inicial');return;}
   if(start===end && startPart==='afternoon' && endPart==='morning'){toast('En un mismo día, el final no puede ser anterior al inicio');return;}
   const value={id:id||newId(),employeeId:String(f.get('employeeId')),start,end,startPart,endPart};
-  state.workDays=state.workDays||[]; if(id)state.workDays=state.workDays.map(x=>x.id===id?value:x); else state.workDays.push(value);
+  state.workDays=state.workDays||[]; const conflicts=state.workDays.filter(x=>x.id!==id&&x.employeeId===value.employeeId&&x.start<=end&&x.end>=start); if(conflicts.length){const e=state.employees.find(x=>x.id===value.employeeId);if(!confirm(`Aviso: ${e?.name||'Este empleado'} ya tiene un refuerzo que coincide con este periodo. ¿Guardar de todos modos?`))return;}
+  const absenceConflicts=state.records.filter(x=>x.employeeId===value.employeeId&&x.start<=end&&x.end>=start); if(absenceConflicts.length&&!confirm('Aviso: el refuerzo coincide con una ausencia registrada. ¿Guardar de todos modos?'))return;
+  if(id)state.workDays=state.workDays.map(x=>x.id===id?value:x); else state.workDays.push(value);
   save(id?'Días de refuerzo modificados':'Días de refuerzo añadidos'); closeModal(); window.app.render(); toast('Días de refuerzo guardados');
 }
 function deleteWorkDay(id){const state=getState();if(!confirm('¿Eliminar este periodo de refuerzo?'))return;state.workDays=(state.workDays||[]).filter(x=>x.id!==id);save('Días de refuerzo eliminados');closeModal();window.app.render();toast('Periodo eliminado');}
@@ -1617,7 +1657,7 @@ return { get renderRecords(){ return renderRecords; }, get renderWorkDays(){ ret
 
 __mods["js/views/calendar.js"] = (function(){
 const { getState } = __mods["js/state.js"];
-const { fmt, iso, recordDays, monthLabel } = __mods["js/dates.js"];
+const { fmt, iso, recordDays, workingDays, workDayUnitsInRange, monthLabel } = __mods["js/dates.js"];
 const { isGuardDate, guardDatesInMonth, guardRuns } = __mods["js/guards.js"];
 const { esc, pill } = __mods["js/ui.js"];
 
@@ -1650,17 +1690,18 @@ function isSpecialGuardMorningWeek(employee,date,guards){
   return cycleIndex >= firstCycle && (cycleIndex-firstCycle)%3===0;
 }
 
-function daySummary(date, state){
-  const rs = state.records.filter((r) => r.start <= date && r.end >= date);
-  const ws = (state.workDays || []).filter((w) => w.start <= date && w.end >= date);
-  const guard = isGuardDate(date, state.settings.guards);
+function daySummary(date, state, filters={}){
+  const rs = state.records.filter((r) => r.start <= date && r.end >= date && (!filters.employee || r.employeeId===filters.employee) && (!filters.type || r.type===filters.type));
+  const ws = (state.workDays || []).filter((w) => w.start <= date && w.end >= date && (!filters.employee || w.employeeId===filters.employee) && filters.work!==false);
+  const guard = filters.guards!==false && isGuardDate(date, state.settings.guards);
   const items = rs.map((r) => {
     const e = state.employees.find((x) => x.id === r.employeeId);
     return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i><b>${esc(e?.name || 'Empleado eliminado')}</b></span>${pill(r.type)}</div><div class="row" style="margin-top:4px"><span class="small muted">${fmt(r.start)} – ${fmt(r.end)}${r.type === 'vacaciones' ? ' · ' + (r.halfDay ? 'medio día' : recordDays(r, state.settings.holidays) + ' días laborables') : ''}</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openRecord('${r.id}')">Editar</button></div>${r.notes ? `<div class="small muted" style="margin-top:2px">${esc(r.notes)}</div>` : ''}</div>`;
   }).join('');
   const workItems = ws.map(w => { const e=state.employees.find(x=>x.id===w.employeeId); const range=w.start===w.end?((w.startPart==='morning'?'Mañana':'Tarde')+' – '+(w.endPart==='morning'?'Mañana':'Tarde')):(date===w.start?'Desde '+(w.startPart==='afternoon'?'tarde':'mañana'):date===w.end?'Hasta '+(w.endPart==='morning'?'mañana':'tarde'):'Jornada completa'); return `<div class="item"><div class="row"><span class="empmark"><i class="empdot" style="background:${esc(e?.color||'#2d6cdf')}"></i><b>${esc(e?.name||'Empleado eliminado')}</b></span><span class="small"><i class="workday-square" style="background:${esc(e?.color||'#2d6cdf')};vertical-align:middle;margin-right:5px"></i>Refuerzo · ${range}</span></div><div class="row" style="margin-top:4px"><span class="small muted">Día de trabajo programado</span><button type="button" class="btn btn-ghost btn-sm" onclick="app.openWorkDay('${w.id}')">Editar</button></div></div>`; }).join('');
-  const guardRest = state.employees.filter(e => isSpecialGuardRestDate(e,date,state.settings.guards));
-  const morningTags = state.employees.filter(e => isSpecialGuardMorningWeek(e,date,state.settings.guards));
+  const visibleEmployees=state.employees.filter(e=>!filters.employee||e.id===filters.employee);
+  const guardRest = filters.rest!==false ? visibleEmployees.filter(e => isSpecialGuardRestDate(e,date,state.settings.guards)) : [];
+  const morningTags = filters.rest!==false ? visibleEmployees.filter(e => isSpecialGuardMorningWeek(e,date,state.settings.guards)) : [];
   return `<div class="card daydetail">
     <div class="card-head"><div><h3>Resumen del ${fmt(date)}</h3><p class="small muted">${rs.length ? rs.length + ' ausencia(s)' : 'Sin ausencias'} · ${ws.length} refuerzo(s)</p></div><button type="button" class="btn btn-secondary btn-sm" onclick="app.openRecordForDate('${date}')">${icon('solar:add-circle-linear', 16)} Añadir</button></div>
     ${guard ? `<div class="guardinfo" style="margin-bottom:var(--space-2)">${icon('solar:shield-warning-linear', 15)} Guardia informativa</div>` : ''}
@@ -1670,55 +1711,81 @@ function daySummary(date, state){
   </div>`;
 }
 
-function renderCalendar(calDate, selectedDate){
+function renderCalendar(calDate, selectedDate, options={}){
   const state = getState();
-  const y = calDate.getFullYear();
-  const m = calDate.getMonth();
-  const first = new Date(y, m, 1);
-  const offset = (first.getDay() + 6) % 7;
-  const days = new Date(y, m + 1, 0).getDate();
-  let cells = '';
-  ['L', 'M', 'X', 'J', 'V', 'S', 'D'].forEach((x) => { cells += `<div class="dayname">${x}</div>`; });
-  for (let i = 0; i < offset; i++) cells += '<div class="day dim"></div>';
-
-  for (let d = 1; d <= days; d++) {
-    const date = iso(new Date(y, m, d));
-    const rs = state.records.filter((r) => r.start <= date && r.end >= date);
-    const ws = (state.workDays || []).filter((w) => w.start <= date && w.end >= date);
-    const guard = isGuardDate(date, state.settings.guards);
-    const guardRest = state.employees.filter(e => isSpecialGuardRestDate(e,date,state.settings.guards));
-  const morningTags = state.employees.filter(e => isSpecialGuardMorningWeek(e,date,state.settings.guards));
-    const today = date === iso(new Date());
-    const dots = rs.slice(0, 4).map((r) => {
-      const e = state.employees.find((x) => x.id === r.employeeId);
-      return `<i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i>`;
-    }).join('');
-    const squares = ws.slice(0,3).map(w=>{const e=state.employees.find(x=>x.id===w.employeeId);return `<i class="workday-square" title="Refuerzo: ${esc(e?.name||'')}" style="background:${esc(e?.color||'#2d6cdf')}"></i>`;}).join('');
-    const morningWeekTags = morningTags.map(e=>`<span class="guard-morning-triangle" title="${esc(e.name)} de mañana" aria-label="${esc(e.name)} de mañana" style="color:${esc(e.color)}">▲</span>`).join('');
-    const restTags = guardRest.map(e=>`<span class="guard-rest-tag" style="background:${esc(e.color)};color:#fff">${esc(e.name)} de mañana</span>`).join('');
-    cells += `<div class="day ${guard ? 'guardday' : ''} ${today ? 'today' : ''} ${selectedDate === date ? 'selected' : ''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d}</span>${rs.length ? `<span class="day-count">${rs.length}</span><span class="day-dots">${dots}</span>` : ''}${squares ? `<span class="workday-squares">${squares}</span>` : ''}${guard ? '<span class="guardtag">GUARDIA</span>' : ''}${(morningWeekTags || restTags) ? `<div class="day-markers">${morningWeekTags}${restTags}</div>` : ''}</div>`;
+  const mode = options.mode || 'month';
+  const summaryMode=options.summaryMode||'period';
+  const filters = options.filters || {};
+  const employeeFilter = filters.employee || '';
+  const typeFilter = filters.type || '';
+  const showGuards = filters.guards !== false;
+  const showRest = filters.rest !== false;
+  const showWork = filters.work !== false;
+  const base = mode === 'week' ? new Date(selectedDate+'T12:00:00') : new Date(calDate);
+  let startDate, endDate, heading;
+  if(mode==='week'){
+    const offset=(base.getDay()+6)%7; startDate=new Date(base); startDate.setDate(base.getDate()-offset); endDate=new Date(startDate); endDate.setDate(startDate.getDate()+6);
+    heading=`${fmt(iso(startDate))} – ${fmt(iso(endDate))}`;
+  } else {
+    const y=base.getFullYear(),m=base.getMonth(); startDate=new Date(y,m,1); endDate=new Date(y,m+1,0); heading=monthLabel(y,m);
   }
-
-  const runs = guardRuns(guardDatesInMonth(y, m, state.settings.guards));
-  const summaryDate = selectedDate.slice(0, 7) === `${y}-${String(m + 1).padStart(2, '0')}` ? selectedDate : iso(new Date(y, m, 1));
-
-  return `<div class="page-head">
-    <div><h2 class="page-title">Calendario</h2><p class="page-sub">Vista mensual de ausencias y guardias informativas</p></div>
-    <button type="button" class="btn btn-primary" onclick="app.openRecord()">${icon('solar:add-circle-linear', 18)} Añadir ausencia</button>
-  </div>
-  <div class="calendar-layout">
-    <section class="card calendar-card">
-      <div class="monthbar"><button type="button" class="icon-btn" aria-label="Mes anterior" onclick="app.changeMonth(-1)">${icon('solar:alt-arrow-left-linear', 20)}</button><strong>${monthLabel(y, m)}</strong><button type="button" class="icon-btn" aria-label="Mes siguiente" onclick="app.changeMonth(1)">${icon('solar:alt-arrow-right-linear', 20)}</button></div>
-      <div class="calendar">${cells}</div>
-      <div class="legend"><span><i class="empdot" style="width:8px;height:8px;flex-basis:8px;background:var(--primary)"></i>Ausencias</span><span><i class="workday-square" style="background:var(--primary)"></i>Días de refuerzo</span><span><i class="guard-swatch"></i>Guardia informativa</span></div>
-    </section>
-    <aside class="day-panel">
-      ${daySummary(summaryDate, state)}
-      <section class="card"><div class="card-head"><h3>Guardias del mes</h3></div>${runs.map((x) => `<div class="item"><div class="row"><span class="guardinfo">${icon('solar:shield-warning-linear', 14)} GUARDIA</span><b class="small">${fmt(x.start)}${x.start !== x.end ? ' – ' + fmt(x.end) : ''}</b></div></div>`).join('') || '<div class="empty" style="padding:var(--space-4) 0"><strong>Sin guardias</strong>No hay días de guardia este mes.</div>'}</section>
-    </aside>
-  </div>`;
+  const start=iso(startDate), end=iso(endDate);
+  const employees=state.employees.filter(e=>!employeeFilter||e.id===employeeFilter);
+  const visibleRecord=r=>(!employeeFilter||r.employeeId===employeeFilter)&&(!typeFilter||r.type===typeFilter);
+  const visibleWork=w=>!employeeFilter||w.employeeId===employeeFilter;
+  const dates=[]; for(let d=new Date(startDate);d<=endDate;d.setDate(d.getDate()+1)) dates.push(iso(d));
+  let cells='';
+  const headers=['L','M','X','J','V','S','D'];
+  if(mode!=='list'){
+    headers.forEach(x=>cells+=`<div class="dayname">${x}</div>`);
+    if(mode==='month') for(let i=0;i<(startDate.getDay()+6)%7;i++) cells+='<div class="day dim"></div>';
+  }
+  const listItems=[];
+  for(const date of dates){
+    const d=new Date(date+'T12:00:00');
+    const rs=state.records.filter(r=>r.start<=date&&r.end>=date&&visibleRecord(r));
+    const ws=showWork?(state.workDays||[]).filter(w=>w.start<=date&&w.end>=date&&visibleWork(w)):[];
+    const guard=showGuards&&isGuardDate(date,state.settings.guards);
+    const guardRest=showRest?employees.filter(e=>isSpecialGuardRestDate(e,date,state.settings.guards)):[];
+    const morningTags=showRest?employees.filter(e=>isSpecialGuardMorningWeek(e,date,state.settings.guards)):[];
+    const today=date===iso(new Date());
+    const dots=rs.slice(0,5).map(r=>{const e=state.employees.find(x=>x.id===r.employeeId);return `<i class="empdot" title="${esc(e?.name||'')} · ${esc(r.type)}" style="background:${esc(e?.color||'#2d6cdf')}"></i>`}).join('');
+    const squares=ws.slice(0,4).map(w=>{const e=state.employees.find(x=>x.id===w.employeeId);return `<i class="workday-square" title="Refuerzo: ${esc(e?.name||'')}" style="background:${esc(e?.color||'#2d6cdf')}"></i>`}).join('');
+    const morningWeekTags=morningTags.map(e=>`<span class="guard-morning-triangle" title="${esc(e.name)} de mañana" aria-label="${esc(e.name)} de mañana" style="color:${esc(e.color)}">▲</span>`).join('');
+    const restTags=guardRest.map(e=>`<span class="guard-rest-tag" style="background:${esc(e.color)};color:#fff">${esc(e.name)} de mañana</span>`).join('');
+    const guardTag=guard?'<span class="guardtag">GUARDIA</span>':'';
+    const markers=(morningWeekTags||restTags)?`<div class="day-markers">${morningWeekTags}${restTags}</div>`:'';
+    if(mode==='list'){
+      const ev=[];
+      if(guard)ev.push('<span class="calendar-event">🛡 Guardia</span>');
+      rs.forEach(r=>{const e=state.employees.find(x=>x.id===r.employeeId);ev.push(`<span class="calendar-event"><i class="empdot" style="background:${esc(e?.color||'#2d6cdf')}"></i>${esc(e?.name||'')} · ${esc(r.type)}</span>`)});
+      ws.forEach(w=>{const e=state.employees.find(x=>x.id===w.employeeId);ev.push(`<span class="calendar-event"><i class="workday-square" style="background:${esc(e?.color||'#2d6cdf')}"></i>${esc(e?.name||'')} · Refuerzo</span>`)});
+      guardRest.forEach(e=>ev.push(`<span class="calendar-event" style="border-left:3px solid ${esc(e.color)}">${esc(e.name)} de mañana</span>`));
+      morningTags.forEach(e=>ev.push(`<span class="calendar-event" style="border-left:3px solid ${esc(e.color)}">▲ ${esc(e.name)} · mañana</span>`));
+      listItems.push(`<div class="calendar-list-day" onclick="app.selectDay('${date}')"><div class="calendar-list-date">${d.toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short'})}</div><div class="calendar-list-events">${ev.join('')||'<span class="small muted">Sin incidencias</span>'}</div></div>`);
+    } else {
+      cells+=`<div class="day ${guard?'guardday':''} ${today?'today':''} ${selectedDate===date?'selected':''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d.getDate()}</span>${rs.length?`<span class="day-count">${rs.length}</span><span class="day-dots">${dots}</span>`:''}${squares?`<span class="workday-squares">${squares}</span>`:''}${guardTag}${markers}</div>`;
+    }
+  }
+  if(mode==='week'&&mode!=='list'){
+    const offset=(startDate.getDay()+6)%7; for(let i=0;i<offset;i++)cells=`<div class="day dim"></div>`+cells;
+  }
+  const monthRuns=guardRuns(guardDatesInMonth(base.getFullYear(),base.getMonth(),state.settings.guards));
+  const sumStart=summaryMode==='year'?`${base.getFullYear()}-01-01`:(mode==='week'?start:`${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}-01`);
+  const sumEnd=summaryMode==='year'?`${base.getFullYear()}-12-31`:(mode==='week'?end:iso(new Date(base.getFullYear(),base.getMonth()+1,0))); 
+  const summaryRows=employees.map(e=>{
+    const rs=state.records.filter(r=>r.employeeId===e.id&&r.start<=sumEnd&&r.end>=sumStart&&(!typeFilter||r.type===typeFilter));
+    const vals=['vacaciones','baja','medica','otro'].map(t=>rs.filter(r=>r.type===t).reduce((n,r)=>{const a=r.start>sumStart?r.start:sumStart,b=r.end<sumEnd?r.end:sumEnd;if(b<a)return n;return n+(t==='vacaciones'?(r.halfDay?0.5:workingDays(a,b,state.settings.holidays)):Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000)+1)},0));
+    const reinf=showWork?(state.workDays||[]).filter(w=>w.employeeId===e.id&&w.start<=sumEnd&&w.end>=sumStart).reduce((n,w)=>n+workDayUnitsInRange(w,sumStart,sumEnd),0):0;
+    return `<tr><td><i class="empdot" style="background:${esc(e.color)};display:inline-block;margin-right:6px"></i>${esc(e.name)}</td>${vals.map(v=>`<td>${v.toLocaleString('es-ES',{maximumFractionDigits:1})}</td>`).join('')}<td>${reinf.toLocaleString('es-ES',{maximumFractionDigits:1})}</td></tr>`;
+  }).join('');
+  const summaryTitle=summaryMode==='year'?`Resumen anual ${base.getFullYear()}`:(mode==='week'?'Resumen de la semana':'Resumen del mes');
+  return `<div class="page-head"><div><h2 class="page-title">Calendario</h2><p class="page-sub">Ausencias, guardias y refuerzos del equipo</p></div><div class="page-actions"><button type="button" class="btn btn-primary" onclick="app.openRecord()">${icon('solar:add-circle-linear',18)} Añadir ausencia</button></div></div>
+  <div class="calendar-controls"><select aria-label="Filtrar empleado" onchange="app.setCalendarFilter('employee',this.value)"><option value="">Todos los empleados</option>${state.employees.map(e=>`<option value="${esc(e.id)}" ${employeeFilter===e.id?'selected':''}>${esc(e.name)}</option>`).join('')}</select><select aria-label="Filtrar tipo de ausencia" onchange="app.setCalendarFilter('type',this.value)"><option value="">Todos los tipos</option>${[['vacaciones','Vacaciones'],['baja','Baja médica'],['medica','Visita médica'],['otro','Otro permiso']].map(([v,l])=>`<option value="${v}" ${typeFilter===v?'selected':''}>${l}</option>`).join('')}</select><div class="calendar-switches"><label><input type="checkbox" ${showGuards?'checked':''} onchange="app.setCalendarFilter('guards',this.checked)"> Guardias</label><label><input type="checkbox" ${showRest?'checked':''} onchange="app.setCalendarFilter('rest',this.checked)"> Descansos / mañanas</label><label><input type="checkbox" ${showWork?'checked':''} onchange="app.setCalendarFilter('work',this.checked)"> Refuerzos</label></div><div class="view-switch"><button class="btn btn-secondary btn-sm ${mode==='month'?'active':''}" onclick="app.setCalendarMode('month')">Mensual</button><button class="btn btn-secondary btn-sm ${mode==='week'?'active':''}" onclick="app.setCalendarMode('week')">Semanal</button><button class="btn btn-secondary btn-sm ${mode==='list'?'active':''}" onclick="app.setCalendarMode('list')">Listado</button></div></div>
+  <div class="calendar-layout"><section class="card calendar-card"><div class="monthbar"><button type="button" class="icon-btn" aria-label="Periodo anterior" onclick="app.changeMonth(-1)">${icon('solar:alt-arrow-left-linear',20)}</button><strong>${heading}</strong><button type="button" class="icon-btn" aria-label="Periodo siguiente" onclick="app.changeMonth(1)">${icon('solar:alt-arrow-right-linear',20)}</button></div>${mode==='list'?`<div class="calendar-list">${listItems.join('')}</div>`:`<div class="calendar">${cells}</div>`}
+  <div class="legend"><span><i class="empdot" style="width:8px;height:8px;flex-basis:8px;background:var(--primary)"></i>Ausencias</span>${showWork?'<span><i class="workday-square" style="background:var(--primary)"></i>Refuerzos</span>':''}${showGuards?'<span><i class="guard-swatch"></i>Guardia informativa</span>':''}${showRest?'<span>▲ Mañana especial</span><span>Etiqueta: descanso de mañana</span>':''}</div></section><aside class="day-panel">${daySummary(selectedDate,state,filters)}${mode==='month'?`<section class="card"><div class="card-head"><h3>Guardias del mes</h3></div>${monthRuns.map(x=>`<div class="item"><span class="guardinfo">${icon('solar:shield-warning-linear',14)} GUARDIA</span><b class="small">${fmt(x.start)}${x.start!==x.end?' – '+fmt(x.end):''}</b></div>`).join('')||'<p class="small muted">Sin guardias este mes.</p>'}</section>`:''}</aside></div>
+  <section class="card calendar-summary"><div class="card-head"><div><h3>${summaryTitle}</h3><p class="small muted">Totales según los filtros activos. Vacaciones en días laborables; otras ausencias en días naturales.</p></div><button class="btn btn-secondary btn-sm" onclick="app.toggleCalendarSummary()">${summaryMode==='year'?'Ver resumen del periodo':'Ver resumen anual'}</button></div><table><thead><tr><th>Empleado</th><th>Vacaciones</th><th>Baja</th><th>Visita médica</th><th>Otros</th><th>Refuerzo</th></tr></thead><tbody>${summaryRows||'<tr><td colspan="6">Sin empleados.</td></tr>'}</tbody></table></section>`;
 }
-
 
 
 return { get renderCalendar(){ return renderCalendar; } };
@@ -1986,8 +2053,9 @@ return { get renderSettings(){ return renderSettings; }, get saveGuardSettings()
 
 __mods["js/report.js"] = (function(){
 const { getState } = __mods["js/state.js"];
-const { fmt, iso, recordDaysInYear, recordYearSpan, workDayUnitsInRange } = __mods["js/dates.js"];
-const { esc, pill, toast, openModal, closeModal, $ } = __mods["js/ui.js"];
+const { fmt, iso, recordDaysInYear, recordYearSpan, calendarDaysInYear, workDayUnitsInRange, monthLabel, workingDays } = __mods["js/dates.js"];
+const { isGuardDate } = __mods["js/guards.js"];
+const { esc, pill, typeLabel, toast, openModal, closeModal, $ } = __mods["js/ui.js"];
 
 function icon(name, size = 18){
   return `<iconify-icon icon="${name}" width="${size}"></iconify-icon>`;
@@ -2006,6 +2074,7 @@ function openReportOptions(){
   <div class="row" style="margin-bottom:var(--space-2)"><b>Años</b><div style="display:flex;gap:4px"><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportYear',true)">Todos</button><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportYear',false)">Ninguno</button></div></div>
   <div class="check-list" style="margin-bottom:var(--space-4)">${years.map((y) => `<label><input class="reportYear" type="checkbox" value="${y}" ${y === currentYear ? 'checked' : ''}> <span>${y}</span></label>`).join('')}</div>
   <label style="display:flex;align-items:center;gap:8px;margin:0 0 var(--space-3)"><input id="reportIncludeWorkDays" type="checkbox" checked> Incluir días de trabajo de refuerzo</label>
+  <div class="card" style="padding:12px;margin:12px 0"><b>Contenido del informe</b><label style="display:flex;gap:8px;margin-top:8px"><input id="reportIncludeRecords" type="checkbox" checked> Registros detallados</label><label style="display:flex;gap:8px;margin-top:6px"><input id="reportIncludeCalendar" type="checkbox"> Calendario del periodo actualmente visible</label><label style="display:flex;gap:8px;margin-top:6px"><input id="reportIncludeLegend" type="checkbox" checked> Incluir leyenda</label><label style="display:flex;gap:8px;margin-top:6px"><input id="reportIncludeSummary" type="checkbox" checked> Incluir resumen mensual</label><p class="help">El calendario del informe respeta los filtros de empleado, tipo, guardias, descansos y refuerzos seleccionados en la pestaña Calendario.</p></div>
   <div class="row" style="margin-bottom:var(--space-2)"><b>Empleados</b><div style="display:flex;gap:4px"><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportEmployee',true)">Todos</button><button type="button" class="btn btn-ghost btn-sm" onclick="app.toggleChecks('reportEmployee',false)">Ninguno</button></div></div>
   <div class="check-list" style="margin-bottom:var(--space-4)">${state.employees.map((e) => `<label><input class="reportEmployee" type="checkbox" value="${e.id}" checked><i class="empdot" style="background:${esc(e.color || '#2d6cdf')}"></i><span>${esc(e.name)}</span></label>`).join('') || '<div class="empty" style="padding:var(--space-4) 0"><strong>Sin empleados</strong>Añade empleados para generar informes.</div>'}</div>
   <div class="form-actions"><button type="button" class="btn btn-secondary" onclick="app.closeModal()">Cancelar</button><button type="button" class="btn btn-primary" onclick="app.generateReport()">Generar informe</button></div>`);
@@ -2015,13 +2084,48 @@ function toggleChecks(cls, value){
   document.querySelectorAll('#sheet .' + cls).forEach((x) => { x.checked = value; });
 }
 
+function reportSpecialRest(e,date,guards){if(!e?.alternateGuardRest||!e.guardRestStart||date<e.guardRestStart||!isGuardDate(date,guards))return false;const a=new Date(e.guardRestStart+'T12:00:00'),b=new Date(date+'T12:00:00'),diff=Math.round((b-a)/86400000),cycle=Math.floor(diff/Number(guards?.everyDays||21)),target=new Date(a);target.setDate(target.getDate()+cycle*Number(guards?.everyDays||21)+(cycle%2?2:0));return iso(target)===date;}
+function reportSpecialMorning(employee,date,guards){if(!employee?.morningGuardEnabled||!employee.morningGuardStart||!isGuardDate(date,guards))return false;const g=guards||{},every=Number(g.everyDays||21),anchor=new Date((g.anchor||'2026-11-16')+'T12:00:00'),current=new Date(date+'T12:00:00'),start=new Date(employee.morningGuardStart+'T12:00:00'),diffFromAnchor=Math.round((start-anchor)/86400000);if(diffFromAnchor<0||!isGuardDate(employee.morningGuardStart,guards))return false;const cycleIndex=Math.floor(Math.round((current-anchor)/86400000)/every),firstCycle=Math.floor(diffFromAnchor/every);return cycleIndex>=firstCycle&&(cycleIndex-firstCycle)%3===0;}
+function buildFilteredCalendarReport(state, employeeIds, includeLegend, includeSummary, includeWorkDays){
+  const ctx=window.__calendarReportContext||{date:iso(new Date()),filters:{}}; const cd=new Date(ctx.date+'T12:00:00'); const base=new Date(cd.getFullYear(),cd.getMonth(),1), y=base.getFullYear(),m=base.getMonth(); const activeFilters=ctx.filters||{};
+  const first=new Date(y,m,1), offset=(first.getDay()+6)%7, days=new Date(y,m+1,0).getDate();
+  const empList=state.employees.filter(e=>employeeIds.includes(e.id)&&(!activeFilters.employee||e.id===activeFilters.employee));
+  const typeFilter=activeFilters.type||'';
+  let html='<div class="report-calendar-grid">'+['L','M','X','J','V','S','D'].map(x=>`<div class="report-cal-head">${x}</div>`).join('');
+  for(let i=0;i<offset;i++)html+='<div class="report-cal-day empty"></div>';
+  for(let d=1;d<=days;d++){
+    const date=iso(new Date(y,m,d)); let ev='';
+    const rs=state.records.filter(r=>r.start<=date&&r.end>=date&&employeeIds.includes(r.employeeId)&&(!activeFilters.employee||r.employeeId===activeFilters.employee)&&(!typeFilter||r.type===typeFilter));
+    rs.forEach(r=>{const e=state.employees.find(x=>x.id===r.employeeId);ev+=`<span class="report-cal-event" style="border-left:3px solid ${esc(e?.color||'#2d6cdf')}">${esc(e?.name||'')} · ${esc(typeLabel(r.type))}</span>`});
+    if(activeFilters.work!==false&&includeWorkDays)(state.workDays||[]).filter(w=>w.start<=date&&w.end>=date&&employeeIds.includes(w.employeeId)&&(!activeFilters.employee||w.employeeId===activeFilters.employee)).forEach(w=>{const e=state.employees.find(x=>x.id===w.employeeId);ev+=`<span class="report-cal-event" style="border-left:3px solid ${esc(e?.color||'#2d6cdf')}">${esc(e?.name||'')} · Refuerzo</span>`});
+    if(activeFilters.guards!==false&&isGuardDate(date,state.settings.guards))ev+='<span class="report-cal-event">Guardia</span>';
+    if(activeFilters.rest!==false)empList.filter(e=>reportSpecialRest(e,date,state.settings.guards)).forEach(e=>ev+=`<span class="report-cal-event" style="border-left:3px solid ${esc(e.color)}">${esc(e.name)} de mañana</span>`);
+    if(activeFilters.rest!==false)empList.filter(e=>reportSpecialMorning(e,date,state.settings.guards)).forEach(e=>ev+=`<span class="report-cal-event" style="border-left:3px solid ${esc(e.color)}">▲ ${esc(e.name)} · mañana</span>`);
+    html+=`<div class="report-cal-day"><div class="n">${d}</div>${ev}</div>`;
+  }
+  html+='</div>';
+  if(includeLegend){html+='<div class="report-cal-legend"><span>● Ausencia (color del empleado)</span>';if(activeFilters.work!==false&&includeWorkDays)html+='<span>■ Refuerzo</span>';if(activeFilters.guards!==false)html+='<span>Guardia</span>';if(activeFilters.rest!==false)html+='<span>▲ Mañana especial / etiqueta de descanso</span>';html+='</div>'}
+  if(includeSummary){
+    html+=`<h2>Resumen de ${monthLabel(y,m)}</h2><table class="report-summary-table"><thead><tr><th>Empleado</th><th>Vacaciones</th><th>Baja</th><th>Visita médica</th><th>Otros</th><th>Refuerzo</th></tr></thead><tbody>`;
+    empList.forEach(e=>{const rs=state.records.filter(r=>r.employeeId===e.id&&r.start<=iso(new Date(y,m+1,0))&&r.end>=iso(first)&&(!typeFilter||r.type===typeFilter));const nums=['vacaciones','baja','medica','otro'].map(t=>rs.filter(r=>r.type===t).reduce((n,r)=>{const a=r.start>iso(first)?r.start:iso(first),b=r.end<iso(new Date(y,m+1,0))?r.end:iso(new Date(y,m+1,0));if(b<a)return n;return n+(t==='vacaciones'?(r.halfDay?0.5:workingDays(a,b,state.settings.holidays)):Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000)+1)},0));const w=activeFilters.work!==false&&includeWorkDays?(state.workDays||[]).filter(w=>w.employeeId===e.id&&w.start<=iso(new Date(y,m+1,0))&&w.end>=iso(first)).reduce((n,w)=>n+workDayUnitsInRange(w,iso(first),iso(new Date(y,m+1,0))),0):0;html+=`<tr><td>${esc(e.name)}</td>${nums.map(n=>`<td>${n.toLocaleString('es-ES',{maximumFractionDigits:1})}</td>`).join('')}<td>${w.toLocaleString('es-ES',{maximumFractionDigits:1})}</td></tr>`});
+    html+='</tbody></table>';
+  }
+  return `<section class="report-calendar-section"><h2>Calendario · ${monthLabel(y,m)}</h2>${html}</section>`;
+}
+
 function generateReport(){
   const state = getState();
-  const years = [...document.querySelectorAll('#sheet .reportYear:checked')].map((x) => Number(x.value));
+  const selectedYears = [...document.querySelectorAll('#sheet .reportYear:checked')].map((x) => Number(x.value));
   const employeeIds = [...document.querySelectorAll('#sheet .reportEmployee:checked')].map((x) => x.value);
-  if (!years.length || !employeeIds.length) { toast('Selecciona al menos un año y un empleado'); return; }
-
+  const includeRecords = document.querySelector('#sheet #reportIncludeRecords')?.checked !== false;
+  const includeCalendar = !!document.querySelector('#sheet #reportIncludeCalendar')?.checked;
+  if (!employeeIds.length || (includeRecords && !selectedYears.length)) { toast('Selecciona al menos un empleado y, para los registros, un año'); return; }
+  if(!includeRecords && !includeCalendar){toast('Selecciona registros o calendario para el informe');return;}
+  const calendarYear = Number((window.__calendarReportContext?.date || iso(new Date())).slice(0,4));
+  const years = selectedYears.length ? selectedYears : [calendarYear];
   const includeWorkDays = !!document.querySelector('#sheet #reportIncludeWorkDays')?.checked;
+  const includeLegend = !!document.querySelector('#sheet #reportIncludeLegend')?.checked;
+  const includeSummary = !!document.querySelector('#sheet #reportIncludeSummary')?.checked;
   const selectedEmployees = state.employees.filter((e) => employeeIds.includes(e.id));
   const records = state.records
     .filter((r) => employeeIds.includes(r.employeeId) && years.some((y) => r.start <= `${y}-12-31` && r.end >= `${y}-01-01`))
@@ -2059,7 +2163,8 @@ function generateReport(){
 
   closeModal();
   const screen = $('#reportScreen');
-  screen.innerHTML = `<div class="report-toolbar"><button type="button" class="btn btn-secondary" onclick="app.closeReport()">${icon('solar:alt-arrow-left-linear', 18)} Volver</button><button type="button" class="btn btn-secondary" onclick="app.createReportImages()">${icon('solar:gallery-add-linear', 18)} Crear imágenes</button><button type="button" class="btn btn-primary" onclick="window.print()">${icon('solar:printer-linear', 18)} Imprimir</button></div><article class="report-paper"><h1>Informe de ausencias</h1><p class="small muted"><b>Año(s):</b> ${period} · <b>Generado:</b> ${fmt(iso(new Date()))} · <b>Empleados:</b> ${selectedEmployees.length} · <b>Ausencias:</b> ${records.length} · <b>Refuerzos:</b> ${includeWorkDays ? (state.workDays || []).filter(w=>employeeIds.includes(w.employeeId) && years.some(y=>w.start<=`${y}-12-31` && w.end>=`${y}-01-01`)).length : 0}</p>${groups || '<p>No hay ausencias para los filtros seleccionados.</p>'}<p class="small muted" style="margin-top:var(--space-5)">Documento interno generado desde Control de ausencias. Datos guardados localmente en el navegador.</p></article>`;
+  const calendarHtml = includeCalendar ? buildFilteredCalendarReport(state, employeeIds, includeLegend, includeSummary, includeWorkDays) : '';
+  screen.innerHTML = `<div class="report-toolbar"><button type="button" class="btn btn-secondary" onclick="app.closeReport()">${icon('solar:alt-arrow-left-linear', 18)} Volver</button><button type="button" class="btn btn-secondary" onclick="app.createReportImages()">${icon('solar:gallery-add-linear', 18)} Crear imágenes</button><button type="button" class="btn btn-primary" onclick="window.print()">${icon('solar:printer-linear', 18)} Imprimir</button></div><article class="report-paper"><h1>${includeRecords ? 'Informe de ausencias' : 'Calendario laboral'}</h1><p class="small muted"><b>Año(s):</b> ${period} · <b>Generado:</b> ${fmt(iso(new Date()))} · <b>Empleados:</b> ${selectedEmployees.length} · <b>Ausencias:</b> ${records.length} · <b>Refuerzos:</b> ${includeWorkDays ? (state.workDays || []).filter(w=>employeeIds.includes(w.employeeId) && years.some(y=>w.start<=`${y}-12-31` && w.end>=`${y}-01-01`)).length : 0}</p>${includeRecords ? (groups || '<p>No hay ausencias para los filtros seleccionados.</p>') : ''}${calendarHtml}<p class="small muted" style="margin-top:var(--space-5)">Documento interno generado desde Control de ausencias. Datos guardados localmente en el navegador.</p></article>`;
   screen.classList.add('show');
 }
 
@@ -2194,6 +2299,27 @@ function createReportImages(){
     for (const tr of rows) addRecord([...tr.children].map((td) => td.innerText));
   }
 
+  const calSection=paper.querySelector('.report-calendar-section');
+  if(calSection){
+    if(y>H-560){finishPage();newPage();}
+    addEmployee(calSection.querySelector('h2')?.innerText||'Calendario');
+    const calDays=[...calSection.querySelectorAll('.report-cal-day')];
+    const colW=CONTENT/7, cellH=145, gridY=y;
+    const headers=['L','M','X','J','V','S','D'];
+    ctx.font='bold 20px Inter, Arial';ctx.fillStyle='#334155';
+    headers.forEach((h,i)=>ctx.fillText(h,M+i*colW+colW/2-5,gridY+20));
+    let idx=0; for(let row=0;row<Math.ceil(calDays.length/7);row++){
+      for(let col=0;col<7;col++){
+        const node=calDays[idx++]; if(!node)continue;
+        const x=M+col*colW, yy=gridY+34+row*cellH;
+        if(!node.classList.contains('empty')){ctx.fillStyle='#fff';ctx.strokeStyle='#cbd5e1';ctx.lineWidth=1;ctx.fillRect(x,yy,colW-4,cellH-5);ctx.strokeRect(x,yy,colW-4,cellH-5);ctx.fillStyle='#0f172a';ctx.font='bold 18px Inter, Arial';ctx.fillText(node.querySelector('.n')?.innerText||'',x+6,yy+22);let ey=yy+42;for(const ev of [...node.querySelectorAll('.report-cal-event')].slice(0,5)){ctx.font='13px Inter, Arial';ctx.fillStyle='#334155';const txt=ev.innerText;const max=colW-16;let line='';for(const word of txt.split(/\s+/)){const t=line?line+' '+word:word;if(ctx.measureText(t).width>max&&line){ctx.fillText(line,x+7,ey);ey+=16;line=word;}else line=t;}if(line&&ey<yy+cellH-10){ctx.fillText(line,x+7,ey);ey+=16;}}}
+      }
+    }
+    y=gridY+34+Math.ceil(calDays.length/7)*cellH+20;
+    const leg=calSection.querySelector('.report-cal-legend');if(leg)y=drawWrapped(leg.innerText,M,y,CONTENT,24,'18px Inter, Arial','#424752')+10;
+    const summary=calSection.querySelector('.report-summary-table');if(summary){if(y>H-260){finishPage();newPage();}for(const tr of [...summary.querySelectorAll('tr')]){const vals=[...tr.children].map(td=>td.innerText).join('   |   ');y=drawWrapped(vals,M,y,CONTENT,24,'16px Inter, Arial','#1f2937')+4;}}
+  }
+
   const footer = paper.querySelector('p.small')?.innerText;
   if (footer) {
     if (y > H - 180) { finishPage(); newPage(); }
@@ -2229,8 +2355,12 @@ const { openReportOptions, toggleChecks, generateReport, createReportImages, clo
 let tab = 'inicio';
 const calDate = new Date();
 let selectedDate = iso(new Date());
+let calendarMode = 'month';
+let calendarSummaryMode = 'period';
+let calendarFilters = { employee:'', type:'', guards:true, rest:true, work:true };
 
 function render(){
+  window.__calendarReportContext={date:iso(calDate),filters:{...calendarFilters},mode:calendarMode};
   document.querySelectorAll('#nav button').forEach((b) => {
     const active = b.dataset.tab === tab;
     b.classList.toggle('active', active);
@@ -2241,7 +2371,7 @@ function render(){
   const app = document.querySelector('#app');
   if (tab === 'inicio') app.innerHTML = renderHome();
   else if (tab === 'empleados') app.innerHTML = renderEmployees();
-  else if (tab === 'calendario') app.innerHTML = renderCalendar(calDate, selectedDate);
+  else if (tab === 'calendario') app.innerHTML = renderCalendar(calDate, selectedDate, {mode:calendarMode,summaryMode:calendarSummaryMode,filters:calendarFilters});
   else if (tab === 'registros') app.innerHTML = renderRecords() + renderWorkDays();
   else if (tab === 'ajustes') app.innerHTML = renderSettings();
 }
@@ -2263,13 +2393,18 @@ function setYear(value){
 
 function selectDay(date){
   selectedDate = date;
+  calDate.setTime(new Date(date+'T12:00:00').getTime());
   render();
 }
 
 function changeMonth(delta){
-  calDate.setMonth(calDate.getMonth() + delta);
+  if(calendarMode==='week'){ const d=new Date(selectedDate+'T12:00:00'); d.setDate(d.getDate()+delta*7); selectedDate=iso(d); calDate.setTime(d.getTime()); } else { calDate.setDate(1); calDate.setMonth(calDate.getMonth()+delta); selectedDate=iso(new Date(calDate.getFullYear(),calDate.getMonth(),1)); }
   render();
 }
+
+function setCalendarMode(mode){ if(!['month','week','list'].includes(mode))return; calendarMode=mode; render(); }
+function toggleCalendarSummary(){calendarSummaryMode=calendarSummaryMode==='year'?'period':'year';render();}
+function setCalendarFilter(key,value){ if(!['employee','type','guards','rest','work'].includes(key))return; calendarFilters[key]=value; render(); }
 
 function filterEmployees(query){
   const q = String(query || '').trim().toLowerCase();
@@ -2308,7 +2443,7 @@ function handleUndo(){
 }
 
 window.app = {
-  render, go, setYear, selectDay, changeMonth, filterEmployees, filterRecords,
+  render, go, setYear, selectDay, changeMonth, setCalendarMode, setCalendarFilter, toggleCalendarSummary, filterEmployees, filterRecords,
   openEmployee, saveEmployee, deleteEmployee,
   openRecord, saveRecord, deleteRecord, openRecordForEmployee, openRecordForDate, toggleRecordFields, previewVacationPart, syncRecordEndMin,
   openWorkDay, saveWorkDay, deleteWorkDay, syncWorkEndMin,
