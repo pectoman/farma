@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f8f9ff">
+<link rel="manifest" href="./manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Ausencias">
@@ -2212,5 +2213,16 @@ render();
 return {  };
 })();
 })();
+</script>
+<script>
+// Registro PWA: no interviene en el funcionamiento normal de la aplicación.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .catch(function (error) {
+        console.error('No se pudo registrar el service worker:', error);
+      });
+  });
+}
 </script>
 </body></html>
