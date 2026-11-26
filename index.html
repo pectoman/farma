@@ -603,6 +603,18 @@ body.modal-open{overflow:hidden}
 }
 
 .workday-squares{display:flex;gap:3px;justify-content:center;margin-top:3px}.workday-square{display:inline-block;width:8px;height:8px;border-radius:1px;flex:0 0 8px}.guard-rest-tag{display:block;font-size:8px;line-height:1.15;padding:2px 3px;border-radius:3px;margin-top:2px;white-space:normal;overflow-wrap:anywhere}.guard-rest-info{font-size:12px}.day{min-height:72px}
+/* Refuerzos y marcadores del calendario */
+.day .day-markers{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-top:17px;padding-right:1px;z-index:1}
+.day .day-markers .guard-rest-tag{position:static;max-width:100%;margin:0;font-size:8px;line-height:1.15}
+.guard-morning-triangle{display:inline-block;font-size:13px;line-height:12px;font-weight:900;margin:0 2px;vertical-align:middle}
+.workday-table .workday-head,.workday-table .workday-row{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.2fr) minmax(0,1.1fr) minmax(90px,.7fr) auto;gap:10px;align-items:center;padding:10px 12px}
+.workday-table .workday-head{font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.04em;font-weight:700;color:var(--on-surface-variant);background:var(--surface-low);border-bottom:1px solid var(--outline-variant)}
+.workday-table .workday-row{border-bottom:1px solid var(--outline-variant)}
+.workday-table .workday-row:last-child{border-bottom:0}
+.workday-total{text-align:right;font-variant-numeric:tabular-nums}
+.workday-actions{display:flex;justify-content:flex-end;white-space:nowrap}
+@media(max-width:767px){.workday-table .workday-head{display:none}.workday-table .workday-row{display:grid;grid-template-columns:1fr auto;gap:5px 10px;padding:12px;border:1px solid var(--outline-variant);border-radius:var(--radius-lg);margin:0 0 8px}.workday-table .workday-row>b:first-child{grid-column:1/-1}.workday-table .workday-row>span:nth-child(2),.workday-table .workday-row>span:nth-child(3){grid-column:1/-1}.workday-table .workday-total{text-align:left}.workday-table .workday-actions{grid-column:2;grid-row:4}}
+
 </style>
 <title>Control de ausencias</title>
 </head>
@@ -1383,7 +1395,7 @@ return { get renderEmployees(){ return renderEmployees; }, get openEmployee(){ r
 
 __mods["js/views/records.js"] = (function(){
 const { getState, save } = __mods["js/state.js"];
-const { fmt, iso, recordDays, workingDays, recordYearSpan, recordDaysInYear } = __mods["js/dates.js"];
+const { fmt, iso, recordDays, workingDays, recordYearSpan, recordDaysInYear, workDayUnitsInRange } = __mods["js/dates.js"];
 const { esc, pill, typeLabel, openModal, closeModal, toast, newId, $ } = __mods["js/ui.js"];
 
 function icon(name, size = 18){
@@ -1575,7 +1587,7 @@ function renderWorkDays(){
   const entries = (state.workDays || []).slice().sort((a,b) => b.start.localeCompare(a.start));
   const byId = new Map(state.employees.map(e => [e.id,e]));
   return `<section class="card" style="margin-top:var(--space-4)"><div class="card-head"><div><h3>Días de trabajo de refuerzo</h3><p class="small muted">Registros independientes de las ausencias</p></div><button type="button" class="btn btn-primary btn-sm" onclick="app.openWorkDay()">${icon('solar:add-circle-linear',16)} Añadir días</button></div>
-  ${entries.length ? `<div class="record-table">${entries.map(w => { const e=byId.get(w.employeeId); return `<div class="record-row" style="display:grid;grid-template-columns:1.2fr 1.2fr 1.4fr auto;gap:10px;align-items:center;padding:12px;border-top:1px solid var(--outline-variant)"><b>${esc(e?.name || 'Empleado eliminado')}</b><span class="small">${fmt(w.start)}${w.end!==w.start?' – '+fmt(w.end):''}</span><span class="small muted">${w.startPart==='afternoon'?'Tarde':'Mañana'} – ${w.endPart==='morning'?'Mañana':'Tarde'}</span><span><button type="button" class="icon-btn btn-sm" aria-label="Editar" onclick="app.openWorkDay('${w.id}')">${icon('solar:pen-linear',16)}</button> <button type="button" class="icon-btn btn-sm" aria-label="Eliminar" onclick="app.deleteWorkDay('${w.id}')">${icon('solar:trash-bin-trash-linear',16)}</button></span></div>`; }).join('')}</div>` : '<div class="empty"><strong>Sin días de refuerzo</strong>Añade aquí los días en los que un empleado de refuerzo trabajará.</div>'}</section>`;
+  ${entries.length ? `<div class="record-table workday-table"><div class="workday-head"><span>Empleado</span><span>Periodo</span><span>Horario</span><span style="text-align:right">Días trabajados</span><span></span></div>${entries.map(w => { const e=byId.get(w.employeeId); const units=workDayUnitsInRange(w,w.start,w.end); return `<div class="workday-row"><b>${esc(e?.name || 'Empleado eliminado')}</b><span class="small">${fmt(w.start)}${w.end!==w.start?' – '+fmt(w.end):''}</span><span class="small muted">${w.startPart==='afternoon'?'Tarde':'Mañana'} – ${w.endPart==='morning'?'Mañana':'Tarde'}</span><b class="workday-total">${units.toLocaleString('es-ES',{maximumFractionDigits:1})}</b><span class="workday-actions"><button type="button" class="icon-btn btn-sm" aria-label="Editar" onclick="app.openWorkDay('${w.id}')">${icon('solar:pen-linear',16)}</button> <button type="button" class="icon-btn btn-sm" aria-label="Eliminar" onclick="app.deleteWorkDay('${w.id}')">${icon('solar:trash-bin-trash-linear',16)}</button></span></div>`; }).join('')}</div>` : '<div class="empty"><strong>Sin días de refuerzo</strong>Añade aquí los días en los que un empleado de refuerzo trabajará.</div>'}</section>`;
 }
 
 function openWorkDay(id = '', employeeId = ''){
@@ -1653,7 +1665,7 @@ function daySummary(date, state){
     <div class="card-head"><div><h3>Resumen del ${fmt(date)}</h3><p class="small muted">${rs.length ? rs.length + ' ausencia(s)' : 'Sin ausencias'} · ${ws.length} refuerzo(s)</p></div><button type="button" class="btn btn-secondary btn-sm" onclick="app.openRecordForDate('${date}')">${icon('solar:add-circle-linear', 16)} Añadir</button></div>
     ${guard ? `<div class="guardinfo" style="margin-bottom:var(--space-2)">${icon('solar:shield-warning-linear', 15)} Guardia informativa</div>` : ''}
     ${morningTags.map(e=>`<div class="guard-rest-info" style="background:${esc(e.color)}18;border-left:4px solid ${esc(e.color)};padding:8px 10px;margin:6px 0;border-radius:6px;color:${esc(e.color)}"><b>${esc(e.name)} de mañana</b></div>`).join('')}
-    ${guardRest.map(e=>`<div class="guard-rest-info" style="background:${esc(e.color)}18;border-left:4px solid ${esc(e.color)};padding:8px 10px;margin:6px 0;border-radius:6px;color:${esc(e.color)}"><b>${esc(e.name)} no trabaja</b></div>`).join('')}
+    ${guardRest.map(e=>`<div class="guard-rest-info" style="background:${esc(e.color)}18;border-left:4px solid ${esc(e.color)};padding:8px 10px;margin:6px 0;border-radius:6px;color:${esc(e.color)}"><b>${esc(e.name)} de mañana</b></div>`).join('')}
     ${items}${workItems}${(!items && !workItems && !guardRest.length && !morningTags.length) ? '<div class="empty" style="padding:var(--space-4) 0"><strong>Día libre de ausencias</strong>No hay ausencias ni refuerzos registrados para este día.</div>' : ''}
   </div>`;
 }
@@ -1682,9 +1694,9 @@ function renderCalendar(calDate, selectedDate){
       return `<i class="empdot" style="background:${esc(e?.color || '#2d6cdf')}"></i>`;
     }).join('');
     const squares = ws.slice(0,3).map(w=>{const e=state.employees.find(x=>x.id===w.employeeId);return `<i class="workday-square" title="Refuerzo: ${esc(e?.name||'')}" style="background:${esc(e?.color||'#2d6cdf')}"></i>`;}).join('');
-    const morningWeekTags = morningTags.map(e=>`<span class="guard-rest-tag" style="background:${esc(e.color)};color:#fff">${esc(e.name)} de mañana</span>`).join('');
-    const restTags = guardRest.map(e=>`<span class="guard-rest-tag" style="background:${esc(e.color)};color:#fff">${esc(e.name)} no trabaja</span>`).join('');
-    cells += `<div class="day ${guard ? 'guardday' : ''} ${today ? 'today' : ''} ${selectedDate === date ? 'selected' : ''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d}</span>${rs.length ? `<span class="day-count">${rs.length}</span><span class="day-dots">${dots}</span>` : ''}${squares ? `<span class="workday-squares">${squares}</span>` : ''}${guard ? '<span class="guardtag">GUARDIA</span>' : ''}${morningWeekTags}${restTags}</div>`;
+    const morningWeekTags = morningTags.map(e=>`<span class="guard-morning-triangle" title="${esc(e.name)} de mañana" aria-label="${esc(e.name)} de mañana" style="color:${esc(e.color)}">▲</span>`).join('');
+    const restTags = guardRest.map(e=>`<span class="guard-rest-tag" style="background:${esc(e.color)};color:#fff">${esc(e.name)} de mañana</span>`).join('');
+    cells += `<div class="day ${guard ? 'guardday' : ''} ${today ? 'today' : ''} ${selectedDate === date ? 'selected' : ''}" onclick="app.selectDay('${date}')" role="button" tabindex="0" aria-label="${date}"><span class="day-num">${d}</span>${rs.length ? `<span class="day-count">${rs.length}</span><span class="day-dots">${dots}</span>` : ''}${squares ? `<span class="workday-squares">${squares}</span>` : ''}${guard ? '<span class="guardtag">GUARDIA</span>' : ''}${(morningWeekTags || restTags) ? `<div class="day-markers">${morningWeekTags}${restTags}</div>` : ''}</div>`;
   }
 
   const runs = guardRuns(guardDatesInMonth(y, m, state.settings.guards));
